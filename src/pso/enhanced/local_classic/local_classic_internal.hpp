@@ -1,0 +1,80 @@
+#ifndef __LCLI__
+#define __LCLI__
+
+#include "../enhanced.hpp"
+
+template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Empty>
+class Local_Classic_Internal : public Enhanced<Type, Type_Arr, Type_Vec, Type_Empty>
+{
+  public:
+    Local_Classic_Internal(const pso_params<Type, Type_Arr> &p, const enhanced_params<Type> &ep, std::string var_type,
+                           int precision = 64, bool constriction = false, std::ostream *output = &(std::cout))
+        : Enhanced<Type, Type_Arr, Type_Vec, Type_Empty>(p, var_type, precision, constriction, true, false, output)
+    {
+        this->ep = ep;
+    }
+
+    Type_Arr fit(double swap_point)
+    {
+        bool success = false;
+
+        Type_Empty empty;
+        this->result = empty;
+
+        if (this->var_type == "mp_real")
+        {
+            // If the variable type is mp_real, set the swap point to the global minimum.
+            // This allows the program to converge and exit.
+            // If the variable type is double, then the program exits at the swap point
+            // set by the user.
+
+            swap_point = double(this->p.gm);
+        }
+
+        if (this->Obj_F == nullptr)
+        {
+            (*this->output) << "~> Error: Objective Function was not declared." << std::endl;
+
+            return empty;
+        }
+
+        this->fpopul = Type_Vec(this->p.popsize);
+
+        this->initialize_arrays();
+        this->evaluate_swarm("initial");
+
+        if (this->check_initial_particles() == false)
+        {
+            // If all the particles have out-of-bounds energy, return this error.
+
+            (*this->output) << "Error: All initial particles are not suitable." << std::endl;
+
+            return this->result;
+        }
+
+        this->swarm_evolution(success, swap_point);
+
+        if (success == true)
+        {
+            // If an orbit is found, save it.
+
+            this->save_minima(this->obj_calculate(this->bestpos.col(this->g)));
+
+            (*this->output) << "|---------------------- " << std::endl;
+            (*this->output) << "-     Orbit Found     - " << std::endl;
+            (*this->output) << "-  Average Iteration  - " << std::endl;
+            (*this->output) << "-    Time(seconds)    - " << std::endl;
+            (*this->output) << "- " << this->avg_time << " - " << std::endl;
+            (*this->output) << "|---------------------- " << std::endl;
+        }
+
+        if (swap_point - double(this->p.gm) <= double(this->p.gm) * 10)
+        {
+            this->obj_print_result(this->result);
+        }
+
+        return this->result;
+    }
+};
+
+#endif
