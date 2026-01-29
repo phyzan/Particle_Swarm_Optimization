@@ -8,7 +8,7 @@ struct grid_params
 {
     int resolution = 1;
     int batch_size = 1;
-    int resume_from_subspace = 0;
+    int starting_subspace = 0;
     std::string dest = "test";
     std::string type = "Global_Classic";
 
@@ -17,7 +17,7 @@ struct grid_params
     pso_params<MP_REAL, MPFR_ARR> p;
 };
 
-void init_folder(std::string name);
+void init_folder(std::string &name);
 
 MPFR_ARR *create_grid_bounds(MPFR_ARR original_bounds, int res, int &grid_size);
 

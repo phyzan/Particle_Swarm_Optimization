@@ -4,7 +4,7 @@
 
 #include "grid_search.hpp"
 
-void init_folder(std::string name)
+void init_folder(std::string &name)
 {
     std::filesystem::path folder(name);
 
@@ -45,12 +45,12 @@ std::string leading_zeros(int grid_size, int current)
 
 MPFR_ARR *create_grid_bounds(MPFR_ARR original_bounds, int res, int &grid_size)
 {
-    int dim = original_bounds.rows();                // Dimensions of the hyperspace.
-    grid_size = pow(2, dim * res);                   // The number of subspaces that will be created.
+    int dim = int(original_bounds.rows());           // Dimensions of the hyperspace.
+    grid_size = int(pow(2, dim * res));              // The number of subspaces that will be created.
                                                      // If the dimensions of the space are 2 and the
                                                      // resolution 3, 2^(2*3) = 64 new subspaces will
                                                      // be created.
-    int dim_divisions = pow(2, res);                 // The number of times each dimension will be
+    int dim_divisions = int(pow(2, res));            // The number of times each dimension will be
                                                      // divided. For example if dim = 2 and res = 3,
                                                      // the x and y axis will be divided in 2^3 = 8
                                                      // each, in order to create an 8x8 grid, with
@@ -99,7 +99,7 @@ MPFR_ARR grid_search(grid_params gp, double swap_point, int precision, std::stri
 {
     int grid_size = 0;
     int running_tasks = 0;
-    int launched_tasks = gp.resume_from_subspace;
+    int launched_tasks = gp.starting_subspace;
     MPFR_ARR grid_minima; // An array that stores all the minima found.
     MPFR_EMPTY empty;
     std::mutex mutex;
@@ -126,14 +126,14 @@ MPFR_ARR grid_search(grid_params gp, double swap_point, int precision, std::stri
     std::cout << "Complete." << std::endl;
     std::cout << "Running " << grid_size << " threads, in batches of " << gp.batch_size << ".\n" << std::endl;
 
-    if (gp.resume_from_subspace > 0 && grid_size > gp.resume_from_subspace)
+    if (gp.starting_subspace > 0 && grid_size > gp.starting_subspace)
     {
-        std::cout << "Resuming from subspace... " << gp.resume_from_subspace << std::endl;
+        std::cout << "Resuming from subspace... " << gp.starting_subspace << std::endl;
     }
-    else if (gp.resume_from_subspace > 0 && grid_size <= gp.resume_from_subspace)
+    else if (gp.starting_subspace > 0 && grid_size <= gp.starting_subspace)
     {
-        std::cout << "Cannot resume from subspace... " << gp.resume_from_subspace << std::endl;
-        std::cout << "Subspace number " << gp.resume_from_subspace << " is larger than grid size " << grid_size << "."
+        std::cout << "Cannot resume from subspace... " << gp.starting_subspace << std::endl;
+        std::cout << "Subspace number " << gp.starting_subspace << " is larger than grid size " << grid_size << "."
                   << std::endl;
 
         delete[] grid_bounds;
@@ -145,7 +145,7 @@ MPFR_ARR grid_search(grid_params gp, double swap_point, int precision, std::stri
     init_folder(gp.dest);
 
     auto thread_task = [&](int id, pso_params<MP_REAL, MPFR_ARR> p, enhanced_params<MP_REAL> ep,
-                           obj_params<MP_REAL> objp, int precision, std::string type) {
+                           obj_params<MP_REAL> &objp, int precision, std::string &type) {
         MPFR_ARR min; // The minimum found in this thread.
         std::string file_name = gp.dest + "/Grid_Search_Global_Classic_PSO_" + std::to_string(id) +
                                 ".txt"; // The output file of this thread.

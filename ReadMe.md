@@ -68,13 +68,14 @@ The parameters can be defined using the structure templates found in the header 
 
 - Grid Parameters
 
-| Parameter |                              Information                                |
-|-----------|-------------------------------------------------------------------------|
-|resolution | The resolution defines how much the space will be disected              |
-|batch_size | How many threads will run at the same time                              |
-|dest       | The destination folder for the output of the program                    |
-|type       | The algorithm variant that will be used, either `Global_Classic` or `Local_Classic`|
-|gp          | A struct with PSO, Enhanced and Objective Function parameters          |
+| Parameter       |                                    Information                                     |
+|-----------------|------------------------------------------------------------------------------------|
+|resolution       | The resolution defines how much the space will be disected                         |
+|batch_size       | How many threads will run at the same time                                         |
+|starting_subspace| Sets the subspace that gridsearch will visit first, ignoring all the previous ones |
+|dest             | The destination folder for the output of the program                               |
+|type             | The algorithm variant that will be used, either `Global_Classic` or `Local_Classic`|
+|gp               | A struct with PSO, Enhanced and Objective Function parameters                      |
 
 - Objective Function Parameters
     - Poincare Parameters
@@ -118,11 +119,14 @@ The testing and production of this project was done on Linux Ubuntu 22.04 and on
 
 # Versions
 
-## Version 0.0.0
+### Version 0.0.0
 - Initial development version
 
-## Version 0.1.0
-- Added an option to resume grid search from a selected subspace.
+### Version 0.1.0
+- Added an option to start grid search from a selected subspace, ignoring the previous ones.
 
-## Version 0.1.1
+### Version 0.1.1
 - Refactored code to follow Microsoft coding standards.
+
+### Version 0.1.2
+- Updated ReadMe and did minor code changes in grid_search.
