@@ -1,8 +1,8 @@
 # Particle Swarm Optimisation [![status: active](https://github.com/GIScience/badges/raw/master/status/active.svg)](https://github.com/GIScience/badges#active) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This is an implementation of the Particle Swarm Optimisation (PSO) algorithm, which was used to conduct the executions for the publication [publication].
+This is an implementation of the Particle Swarm Optimisation (PSO) algorithm, which was used to conduct the executions for the publication [\[1\]](#ref-1).
 
-The PSO algorithm is a Swarm intelligence method that solves global optimisation problems. More information about how the algorithm functions can be found in the [publication].
+The PSO algorithm is a Swarm intelligence method that solves global optimisation problems. More information about how the algorithm functions can be found in the publication [\[1\]](#ref-1).
 
 ## Objective function
 
@@ -92,7 +92,7 @@ The parameters can be defined using the structure templates found in the header 
 |  xpoin    | The Y coordinate                                                |
 |  err_goal | The error tolerance that determines if convergence is achieved  |
 
-For a more deep understanding of what each parameter does, it is advised to consult the [publication]. The default values are not suggested values, they are placeholders. Every system has different values that are efficient and they could differ a lot from the default ones.
+For a more deep understanding of what each parameter does, it is advised to consult the publication. The default values are not suggested values, they are placeholders. Every system has different values that are efficient and they could differ a lot from the default ones.
 
 - Swap Point
 
@@ -114,7 +114,7 @@ The testing and production of this project was done on Linux Ubuntu 22.04 and on
 
 # Credits
 
-- [Publication]
+- <a id="ref-1"></a>Katsanikas Μ., Bakos Κ. and Wiggins S. [2026], The Computation of Periodic Orbits in Hamiltonian Systems Using Swarm Intelligence, International Journal of Bifurcation and Chaos, 36, 2650102.
 - [Foivos Zanias](https://github.com/phyzan), for the creation of the [ODE pack](https://github.com/phyzan/odepack) used for the implementation of this project, as well as insights for the general implementation.
 
 # Versions
