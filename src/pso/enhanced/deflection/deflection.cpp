@@ -72,7 +72,7 @@ MPFR_ARR Deflection::fit(int runs)
         }
         else
         {
-            db_result = mpfr_to_double_ARR(mp_result);
+            mpfr_to_double_ARR(db_result, mp_result);
         }
 
         // Run the algorithm up until the swap point.
@@ -82,22 +82,23 @@ MPFR_ARR Deflection::fit(int runs)
         // is found, return them and exit.
         if (db_result.cols() == runs)
         {
-            return double_to_mpfr_ARR(db_result);
+            return double_to_mpfr_ARR(mp_result, db_result);
         }
 
         // Import the variables from the double model to the mpreal model.
-        this->defl_in_mpreal->var_import(this->defl_in_double->var_export());
+        static thread_local variables v;
+        this->defl_in_mpreal->var_import(this->defl_in_double->var_export(v));
 
         // Run from the swap point until the algorithm converges or
         // reaches maximum iterations.
-        mp_result = double_to_mpfr_ARR(db_result);
+        double_to_mpfr_ARR(mp_result, db_result);
 
         mp_result = this->defl_in_mpreal->fit(this->swap_point, mp_result);
     }
 
     if (db_result.cols() == runs)
     {
-        return double_to_mpfr_ARR(db_result);
+        return double_to_mpfr_ARR(mp_result, db_result);
     }
     else
     {

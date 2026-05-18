@@ -6,6 +6,7 @@
 #include "../functions/functions.hpp"
 #include "../objective_functions/objective_functions.hpp"
 
+
 template <typename Type, typename Type_Arr> struct pso_params
 {
     // A structure that contains variables used by all algorithms
@@ -44,7 +45,7 @@ struct variables
 };
 
 template <typename Type, typename Type_Arr>
-pso_params<MP_REAL, MPFR_ARR> pso_params_to_mpfr(pso_params<Type, Type_Arr> params)
+pso_params<MP_REAL, MPFR_ARR> pso_params_to_mpfr(const pso_params<Type, Type_Arr>& params)
 {
     pso_params<MP_REAL, MPFR_ARR> mpfr_params;
 
@@ -63,7 +64,7 @@ pso_params<MP_REAL, MPFR_ARR> pso_params_to_mpfr(pso_params<Type, Type_Arr> para
 }
 
 template <typename Type, typename Type_Arr>
-pso_params<double, DOUBLE_ARR> pso_params_to_double(pso_params<Type, Type_Arr> params)
+pso_params<double, DOUBLE_ARR> pso_params_to_double(const pso_params<Type, Type_Arr>& params)
 {
     pso_params<double, DOUBLE_ARR> double_params;
 
@@ -76,7 +77,7 @@ pso_params<double, DOUBLE_ARR> pso_params_to_double(pso_params<Type, Type_Arr> p
     double_params.max_w = double(params.max_w);
     double_params.min_w = double(params.min_w);
     double_params.err_goal = double(params.err_goal);
-    double_params.bounds = mpfr_to_double_ARR(params.bounds);
+    mpfr_to_double_ARR(double_params.bounds, params.bounds);
 
     return double_params;
 }
@@ -84,7 +85,7 @@ pso_params<double, DOUBLE_ARR> pso_params_to_double(pso_params<Type, Type_Arr> p
 template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Empty> class PSO
 {
   public:
-    PSO(const pso_params<Type, Type_Arr> &p, std::string var_type, int precision, std::ostream *output)
+    PSO(const pso_params<Type, Type_Arr> &p, const std::string& var_type, int precision, std::ostream *output)
     {
         this->g = -1;
         this->p = p;
@@ -108,7 +109,8 @@ template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Emp
         }
 
         // Sets default MPFR precision globally.
-        mpfr::mpreal::set_default_prec(precision);
+        lazy::set_default_mpreal_prec(precision);
+        // mpfr::mpreal::set_default_prec(precision);
 
         // The velocity boundaries are arbitrarily set boundaries for the
         // velocity of the particles with the aim to prevent numerical explosions.
@@ -121,7 +123,7 @@ template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Emp
 
         for (int i = 0; i < this->p.dim; i++)
         {
-            Type abs_vebound = lmath::abs((this->p.bounds(i, 1) - this->p.bounds(i, 0)) / 2);
+            Type abs_vebound = abs((this->p.bounds(i, 1) - this->p.bounds(i, 0)) / 2);
 
             this->vel_bounds(i, 0) = -abs_vebound;
             this->vel_bounds(i, 1) = abs_vebound;
@@ -140,7 +142,7 @@ template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Emp
         }
     }
 
-    void var_import(variables v)
+    void var_import(const variables& v)
     {
         // A function that uses a variables structure to import
         // essential variables to continue the execution with MPFR variables.
@@ -157,27 +159,25 @@ template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Emp
         this->imported = true;
     }
 
-    void set_Obj_F(std::string objective_func, const obj_params<Type> &params)
+    void set_Obj_F(const std::string& objective_func, const obj_params<Type> &params)
     {
         this->Obj_F = new Objective_Functions<Type, Type_Arr, Type_Vec, Type_Empty>(this->output);
 
         this->Obj_F->init(params, objective_func);
     }
 
-    variables var_export()
+    variables var_export(variables& v)
     {
         // A function that creates a variables structure and exports
         // the essential variables.
 
-        variables v;
-
         v.iter = this->iter;
-        v.vel = double_to_mpfr_ARR(this->vel);
-        v.popul = double_to_mpfr_ARR(this->popul);
-        v.fpopul = double_to_mpfr_VEC(this->fpopul);
-        v.result = double_to_mpfr_ARR(this->result);
-        v.bestpos = double_to_mpfr_ARR(this->bestpos);
-        v.fbestpos = double_to_mpfr_VEC(this->fbestpos);
+        double_to_mpfr_ARR(v.vel, this->vel);
+        double_to_mpfr_ARR(v.popul, this->popul);
+        double_to_mpfr_VEC(v.fpopul, this->fpopul);
+        double_to_mpfr_ARR(v.result, this->result);
+        double_to_mpfr_ARR(v.bestpos, this->bestpos);
+        double_to_mpfr_VEC(v.fbestpos, this->fbestpos);
         v.g = this->g;
 
         return v;
@@ -293,27 +293,32 @@ template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Emp
             }
         }
 
-        return ((inf_count == this->fpopul.size()) ? false : true);
+        return (inf_count != this->fpopul.size());
     }
 
     void vel_clamp()
     {
         // A function that prevents the explosion of particle values
         // using the velocity boundaries as explained in the constructor.
+        // Clamp in-place using vectorized operations - more cache-friendly.
 
-        Type_Arr clamped(this->p.dim, this->p.popsize);
-
-        for (int i = 0; i < this->p.dim; i++)
+        for (int j = 0; j < this->p.popsize; j++)
         {
-            clamped.row(i) = this->vel.row(i).cwiseMax(this->vel_bounds(i, 0)).cwiseMin(this->vel_bounds(i, 1));
+            // Column-wise access is cache-friendly for column-major Eigen arrays
+            for (int i = 0; i < this->p.dim; i++)
+            {
+                if (this->vel(i, j) < this->vel_bounds(i, 0)) {
+                    this->vel(i, j) = this->vel_bounds(i, 0);
+                } else if (this->vel(i, j) > this->vel_bounds(i, 1)) {
+                    this->vel(i, j) = this->vel_bounds(i, 1);
+                }
+            }
         }
-
-        this->vel = clamped;
     }
 
     void initialize_arrays()
     {
-        if (this->imported == true)
+        if (this->imported)
         {
             return;
         }
@@ -325,9 +330,13 @@ template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Emp
         this->popul = Type_Arr::NullaryExpr(this->p.dim, this->p.popsize, [&]() { return Type(uniform_real(0, 1)); });
 
         // Apply dimensional limits for the population.
-        for (int i = 0; i < this->p.dim; i++)
+        // Column-wise access is cache-friendly for column-major Eigen arrays
+        for (int j = 0; j < this->p.popsize; j++)
         {
-            popul.row(i) = popul.row(i) * (this->p.bounds(i, 1) - this->p.bounds(i, 0)) + this->p.bounds(i, 0);
+            for (int i = 0; i < this->p.dim; i++)
+            {
+                this->popul(i, j) = this->popul(i, j) * (this->p.bounds(i, 1) - this->p.bounds(i, 0)) + this->p.bounds(i, 0);
+            }
         }
 
         this->fpopul = empty;
@@ -335,9 +344,10 @@ template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Emp
         this->fbestpos = empty;
     }
 
-    void save_minima(Type_Arr min)
+    void save_minima(const Type_Arr& min)
     {
         // Expands the result array to save a new minimum that is found.
+        // Uses conservativeResize to avoid creating temporary array.
 
         if (this->result.size() == 0)
         {
@@ -345,17 +355,16 @@ template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Emp
         }
         else
         {
-            Type_Arr new_minima(this->p.dim, this->result.cols() + min.cols());
-            new_minima.leftCols(this->result.cols()) = this->result;
-            new_minima.rightCols(min.cols()) = min;
-
-            this->result = new_minima;
+            Eigen::Index old_cols = this->result.cols();
+            // conservativeResize preserves existing data
+            this->result.conservativeResize(this->p.dim, old_cols + min.cols());
+            this->result.rightCols(min.cols()) = min;
         }
     }
 
     void check_stop_criterion(bool &success)
     {
-        if (lmath::abs(this->fbestpos(g) - this->p.gm) <= this->p.err_goal)
+        if (abs(this->fbestpos(g) - this->p.gm) <= this->p.err_goal)
         {
             success = true;
         }
@@ -363,17 +372,17 @@ template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Emp
 
     void swarm_evolution(bool &success, double swap_point)
     {
-        if (this->imported == false)
+        if (!(this->imported))
         {
             this->iter = 0;
         }
 
         Type w = this->p.max_w;
-        Type weveryit = lmath::floor(0.75 * this->p.max_it);
+        Type weveryit = floor(0.75 * this->p.max_it);
         Type inertdec = (this->p.max_w - this->p.min_w) / weveryit;
 
         // Swarm evolution loop.
-        while ((success == false) && (this->iter < this->p.max_it))
+        while ((!success) && (this->iter < this->p.max_it))
         {
             auto start = std::chrono::high_resolution_clock::now();
 
@@ -405,12 +414,12 @@ template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Emp
                 this->avg_time /= this->iter;
             }
 
-            (*this->output) << "|----------------- " << std::endl;
-            (*this->output) << "|- Iteration     : " << this->iter << std::endl;
-            (*this->output) << "|- Error         : " << this->fbestpos(g) << std::endl;
-            (*this->output) << "|- Duration(s)   : " << duration.count() / 1000000000.0 << std::endl;
-            (*this->output) << "|- Best Particle : " << this->bestpos.col(g).transpose() << std::endl;
-            (*this->output) << "|----------------- " << std::endl;
+            // (*this->output) << "|----------------- " << std::endl;
+            // (*this->output) << "|- Iteration     : " << this->iter << std::endl;
+            // (*this->output) << "|- Error         : " << this->fbestpos(g) << std::endl;
+            // (*this->output) << "|- Duration(s)   : " << duration.count() / 1000000000.0 << std::endl;
+            // (*this->output) << "|- Best Particle : " << this->bestpos.col(g).transpose() << std::endl;
+            // (*this->output) << "|----------------- " << std::endl;
         }
 
         this->imported = false;
@@ -434,12 +443,8 @@ template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Emp
         Type_Arr R1(dim, popsize);
         Type_Arr R2(dim, popsize);
 
-        A = bestpos.col(g).replicate(1, bestpos.cols());
-
-        for (int i = 0; i < bestpos.cols(); i++)
-        {
-            A.col(i) = bestpos.col(g);
-        }
+        // Use Eigen's replicate - no need for the redundant loop
+        A = bestpos.col(g).replicate(1, popsize);
 
         R1 = Type_Arr::NullaryExpr(dim, popsize, [&]() { return Type(uniform_real(0, 1)); });
         R2 = Type_Arr::NullaryExpr(dim, popsize, [&]() { return Type(uniform_real(0, 1)); });
@@ -455,7 +460,7 @@ template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Emp
         this->fpopul = this->obj_function(this->popul);
 
         // Initialize best position matrices.
-        if (type == "initial" && this->imported == false)
+        if (type == "initial" && !this->imported)
         {
             this->bestpos = this->popul;
             this->fbestpos = this->fpopul;
@@ -476,19 +481,19 @@ template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Emp
         this->fbestpos.minCoeff(&g);
     }
 
-    inline void obj_print_result(Type_Arr result)
+    inline void obj_print_result(const Type_Arr& res)
     {
-        this->Obj_F->print_result(result);
+        this->Obj_F->print_result(res);
     }
 
-    inline Type_Arr obj_calculate(Type_Vec particle)
+    inline Type_Arr obj_calculate(const Type_Vec& particle)
     {
         return this->Obj_F->calculate(particle);
     }
 
-    inline virtual Type_Vec obj_function(Type_Arr popul)
+    inline virtual Type_Vec obj_function(const Type_Arr& population)
     {
-        return this->Obj_F->call(popul).array();
+        return this->Obj_F->call(population).array();
     }
 };
 

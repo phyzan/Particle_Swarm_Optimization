@@ -106,6 +106,41 @@ If the user wants to use only `double` variables, they can set the `swap_point` 
 
 # Compiling the project
 
+## Dependencies
+
+This project depends on the following:
+
+
+- MPFR and GMP development libraries
+- OpenMP (Linux)
+- Git submodules:
+    - `external/odepack`
+    - `external/lazy`
+    - `external/eigen`
+
+After cloning, initialize submodules:
+
+```sh
+git submodule update --init --recursive
+```
+
+Then configure and build (with release mode by default) the demos from a clean build directory:
+
+```sh
+mkdir -p build
+cd build
+cmake ..
+make -j
+```
+
+To explicitly select a build type:
+
+```sh
+cmake -DCMAKE_BUILD_TYPE=Release ..
+# or
+cmake -DCMAKE_BUILD_TYPE=Debug ..
+```
+
 To compile the demo version, execute `make all` in the `/bin` folder if the environment is Linux. If it is MACOS, execute `make __MAC__=true all`. The difference between these two compilations is the implementation of the threads. In a Linux environment the user can define the number of threads they want to use, but in a MACOS environment the system itself regularises the number of threads used by the program.
 
 # Testing and Production Environment

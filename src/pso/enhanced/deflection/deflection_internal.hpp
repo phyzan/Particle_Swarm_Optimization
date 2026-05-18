@@ -22,7 +22,7 @@ class Deflection_Internal : public Enhanced<Type, Type_Arr, Type_Vec, Type_Empty
         // A function that checks if the parameters provided are
         // logically correct.
 
-        if (Enhanced<Type, Type_Arr, Type_Vec, Type_Empty>::parameter_check() == false)
+        if (!Enhanced<Type, Type_Arr, Type_Vec, Type_Empty>::parameter_check())
         {
             return false;
         }
@@ -77,7 +77,7 @@ class Deflection_Internal : public Enhanced<Type, Type_Arr, Type_Vec, Type_Empty
         this->initialize_arrays();
         this->evaluate_swarm("initial");
 
-        if (this->check_initial_particles() == false)
+        if (!this->check_initial_particles())
         {
             // If all the particles have out-of-bounds energy, return this error.
 
@@ -88,7 +88,7 @@ class Deflection_Internal : public Enhanced<Type, Type_Arr, Type_Vec, Type_Empty
 
         this->swarm_evolution(success, swap_point);
 
-        if (success == true)
+        if (success)
         {
             // If an orbit is found, save it.
 
@@ -118,7 +118,7 @@ class Deflection_Internal : public Enhanced<Type, Type_Arr, Type_Vec, Type_Empty
     Type l;
     Type constant; // The value of the minimum that the algorithm converges to.
 
-    Type_Vec Pi(Type_Arr popul)
+    Type_Vec Pi(const Type_Arr& popul)
     {
         // Please refer to the publication for this function.
 
@@ -143,14 +143,14 @@ class Deflection_Internal : public Enhanced<Type, Type_Arr, Type_Vec, Type_Empty
         }
     }
 
-    Type_Vec T(Type_Arr x, Type_Arr x_star)
+    Type_Vec T(const Type_Arr& x, const Type_Arr& x_star)
     {
         // Please refer to the publication for this function.
 
         return ((this->l * (x - x_star).colwise().norm()).array()).tanh();
     }
 
-    Type_Vec obj_function(Type_Arr particles) override
+    Type_Vec obj_function(const Type_Arr& particles) override
     {
         return ((this->Obj_F->call(particles).array() + this->constant) * this->Pi(particles).array());
     }

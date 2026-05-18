@@ -17,7 +17,7 @@ template <typename Type, typename Type_Vec> class H
 
     uint64_t calculate(Type_Vec particle)
     {
-        return uint64_t(lmath::floor((particle.array().cwiseProduct(this->v.array()).sum() + this->b) / this->w));
+        return uint64_t(floor((particle.array().cwiseProduct(this->v.array()).sum() + this->b) / this->w));
     }
 
   private:

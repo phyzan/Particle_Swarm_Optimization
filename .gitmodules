@@ -1,0 +1,12 @@
+[submodule "external/odepack"]
+	path = external/odepack
+	url = https://github.com/phyzan/odepack
+	branch = main
+[submodule "external/lazy"]
+	path = external/lazy
+	url = https://github.com/phyzan/lazy
+	branch = main
+[submodule "external/eigen"]
+	path = external/eigen
+	url = https://gitlab.com/libeigen/eigen.git
+	branch = 3.4

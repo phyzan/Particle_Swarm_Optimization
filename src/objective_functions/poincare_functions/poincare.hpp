@@ -7,17 +7,14 @@ template <typename Type, typename Type_Arr, typename Type_Vec>
 class Poincare : public Parent_Poincare<Type, Type_Arr, Type_Vec>
 {
   public:
-    Poincare(const poinc_params<Type> &pc, std::ostream *output = &(std::cout))
+    Poincare(const poinc_params<Type> &pc, std::ostream *output = &(std::cout)) : Parent_Poincare<Type, Type_Arr, Type_Vec>(pc, output)
     {
-        this->pc = pc;
-        this->output = output;
-
 #ifdef __MAC__
         this->sem_lock = dispatch_semaphore_create(1);
 #endif
     }
 
-    Type_Vec objective_function(Type_Arr population)
+    Type_Vec objective_function(const Type_Arr& population)
     {
         Type_Vec fpopulation(population.cols());
 #ifdef __MAC__
@@ -41,12 +38,11 @@ class Poincare : public Parent_Poincare<Type, Type_Arr, Type_Vec>
         { // Multithreading for Linux.
             omp_set_num_threads(this->pc.threads);
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic)
             for (int i = 0; i < population.cols(); i++)
             {
-                InstanceParams *instance = new InstanceParams{i, this, &fpopulation, population};
-
-                Poincare::objf_calculation(instance);
+                // Stack allocation instead of heap - no new/delete overhead
+                objf_calculation_inline(i, this, fpopulation, population);
             }
         }
 #endif
@@ -54,9 +50,7 @@ class Poincare : public Parent_Poincare<Type, Type_Arr, Type_Vec>
         { // No multithreading (user declared pc.threads <= 1).
             for (int i = 0; i < population.cols(); i++)
             {
-                InstanceParams *instance = new InstanceParams{i, this, &fpopulation, population};
-
-                Poincare::objf_calculation(instance);
+                objf_calculation_inline(i, this, fpopulation, population);
             }
         }
 
@@ -72,12 +66,50 @@ class Poincare : public Parent_Poincare<Type, Type_Arr, Type_Vec>
         const Type_Arr population;
     };
 
+    // inline calculation without heap allocation - used by OpenMP and single-threaded paths
+    static void objf_calculation_inline(int i, Poincare *instance, Type_Vec &fpopulation, const Type_Arr &population)
+    {
+        Type_Vec q(4);
+
+        if (isinf(population(0, i)))
+        {
+            // If the current particle has out-of-bounds energy (i.e. =inf), do not process it.
+            return;
+        }
+
+        // Calculate the new position of the particle.
+        Type_Arr poinc_sections = instance->calculate((population.col(i)), q, true);
+
+        Type x = poinc_sections(0, poinc_sections.cols() - 1);
+        Type px = poinc_sections(1, poinc_sections.cols() - 1);
+        Type py = poinc_sections(2, poinc_sections.cols() - 1);
+
+        Type magnitude_p = (x*x + px*px + py*py);
+
+        // Calculate the difference of the new and the old position of the particle using the
+        // function described in the publication.
+        if (py > 0 && x != ode::inf<Type>())
+        {
+            fpopulation(i) = sqrt((x * x * (q[0] - x) * (q[0] - x)) +
+                                  (px * px * (q[2] - px) * (q[2] - px)) +
+                                  (py * py * (q[3] - py) * (q[3] - py))) /
+                             magnitude_p;
+        }
+        else
+        { // If py <= 0, return infinity.
+            fpopulation(i) = ode::inf<Type>();
+        }
+
+        mpfr_free_cache2(MPFR_FREE_LOCAL_CACHE);
+    }
+
+    // Heap-based version for Mac dispatch (requires void* parameter)
     static void objf_calculation(void *instance)
     {
         Type_Vec q(4);
         InstanceParams *l_instance = static_cast<InstanceParams *>(instance);
 
-        if (lmath::isinf(l_instance->population(0, l_instance->i)))
+        if (isinf(l_instance->population(0, l_instance->i)))
         {
             // If the current particle has out-of-bounds energy (i.e. =inf), do not process it and return.
 
@@ -93,20 +125,20 @@ class Poincare : public Parent_Poincare<Type, Type_Arr, Type_Vec>
         Type px = poinc_sections(1, poinc_sections.cols() - 1);
         Type py = poinc_sections(2, poinc_sections.cols() - 1);
 
-        Type magnitude_p = (lmath::pow(x, 2) + lmath::pow(px, 2) + lmath::pow(py, 2));
+        Type magnitude_p = (x * x + px * px + py * py);
 
         // Calculate the difference of the new and the old position of the particle using the
         // function described in the publication.
-        if (py > 0 && x != lmath::get_infinity<Type>())
+        if (py > 0 && x != ode::inf<Type>())
         {
-            (*l_instance->fpopulation)(l_instance->i) = lmath::sqrt((lmath::pow(x, 2) * lmath::pow(q[0] - x, 2)) +
-                                                                    (lmath::pow(px, 2) * lmath::pow(q[2] - px, 2)) +
-                                                                    (lmath::pow(py, 2) * lmath::pow(q[3] - py, 2))) /
+            (*l_instance->fpopulation)(l_instance->i) = sqrt((x * x * (q[0] - x) * (q[0] - x)) +
+                                                                    (px * px * (q[2] - px) * (q[2] - px)) +
+                                                                    (py * py * (q[3] - py) * (q[3] - py))) /
                                                         magnitude_p;
         }
         else
         { // If py <= 0, return infinity.
-            (*l_instance->fpopulation)(l_instance->i) = lmath::get_infinity<Type>();
+            (*l_instance->fpopulation)(l_instance->i) = ode::inf<Type>();
         }
 
         delete l_instance;

@@ -4,13 +4,14 @@
 #include "poincare_functions/poincare.hpp"
 #include "poincare_functions/simple_poincare.hpp"
 
+
 template <typename Type> struct obj_params
 {
     poinc_params<Type> pc;
     // template_params<Type,Type_Arr,Type_Vec,Type_Empty> temp;
 };
 
-template <typename Type> obj_params<MP_REAL> obj_params_to_mpfr(obj_params<Type> params)
+template <typename Type> obj_params<MP_REAL> obj_params_to_mpfr(const obj_params<Type>& params)
 {
     obj_params<MP_REAL> mpfr_params;
 
@@ -31,7 +32,7 @@ template <typename Type> obj_params<MP_REAL> obj_params_to_mpfr(obj_params<Type>
     return mpfr_params;
 }
 
-template <typename Type> obj_params<double> obj_params_to_double(obj_params<Type> params)
+template <typename Type> obj_params<double> obj_params_to_double(const obj_params<Type>& params)
 {
     obj_params<double> double_params;
 
@@ -87,7 +88,7 @@ template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Emp
         */
     }
 
-    void print_result(Type_Arr result)
+    void print_result(const Type_Arr& result)
     {
         // A function to print the result in a custom way
         // tailored to the objective function that is in use.
@@ -125,7 +126,7 @@ template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Emp
         */
     }
 
-    Type_Vec call(Type_Arr popul)
+    Type_Vec call(const Type_Arr& popul)
     {
         // A function that calls the objective function in use.
 
@@ -150,7 +151,7 @@ template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Emp
         }
     }
 
-    Type_Arr calculate(Type_Vec particle)
+    Type_Arr calculate(const Type_Vec& particle)
     {
         // A function that calculates the new position of only one particle of the population.
 

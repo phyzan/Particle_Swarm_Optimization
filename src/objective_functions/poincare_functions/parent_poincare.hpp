@@ -1,8 +1,14 @@
 #ifndef __PPNC__
 #define __PPNC__
 
-#include "../../odepack/include/odepack/ode.hpp"
-#include <thread>
+
+#include <iostream>
+#include <lazy/lazy.hpp>
+#include <odepack/ode/Core/ObjectiveSolver.hpp>
+#include <odepack/ode/Tools.hpp>
+#include <odepack/odepack.hpp>
+#include <lazy/mpfrLazy.hpp>
+#include "../../local_definitions.hpp"
 
 #ifdef __MAC__
 #include <dispatch/dispatch.h>
@@ -10,8 +16,6 @@
 #include <mutex>
 #include <omp.h>
 #endif
-
-#include "../../local_definitions.hpp"
 
 template <typename Type> struct poinc_params
 {
@@ -31,114 +35,67 @@ template <typename Type> struct poinc_params
 
 template <typename Type, typename Type_Arr, typename Type_Vec> class Parent_Poincare;
 
-template <typename Type> void F(Type *res, const Type &t, const Type *q, const Type *args, const void *aux)
-{
-    // The function F that calculates the new position.
-    const auto *pc = reinterpret_cast<const poinc_params<Type> *>(aux);
 
-    const Type &x = q[0];
-    const Type &y = q[1];
-    const Type &px = q[2];
-    const Type &py = q[3];
+template<typename T>
+struct OdeSystem{
 
-    Type vx = 2 * pc->c1 * x - 4 * pc->c3 * x * x * x + 12 * pc->c3 * x * y * y;
-    Type vy = 2 * pc->c1 * y + pc->c2 - 4 * pc->c3 * y * y * y + 12 * pc->c3 * y * x * x;
+    T c1, c2, c3;
 
-    res[0] = px;
-    res[1] = py;
-    res[2] = -vx;
-    res[3] = -vy;
-};
+    template<typename R>
+    FORCE_INLINE void Rhs(R* out, const R& t, const R* q, const R* args) const{
 
-template <typename Type> void Jac(Type *J, const Type &t, const Type *q, const Type *args, const void *aux)
-{
-    const auto *pc = reinterpret_cast<const poinc_params<Type> *>(aux);
+        const R &x = q[0];
+        const R &y = q[1];
+        const R &px = q[2];
+        const R &py = q[3];
 
-    const Type &x = q[0];
-    const Type &y = q[1];
+        R vx = 2 * c1 * x - 4 * c3 * x * x * x + 12 * c3 * x * y * y;
+        R vy = 2 * c1 * y + c2 - 4 * c3 * y * y * y + 12 * c3 * y * x * x;
 
-    // Precompute terms
-    Type dvx_dx = 2 * pc->c1 - 12 * pc->c3 * x * x + 12 * pc->c3 * y * y;
-    Type dvx_dy = 24 * pc->c3 * x * y;
-
-    Type dvy_dx = 24 * pc->c3 * x * y;
-    Type dvy_dy = 2 * pc->c1 - 12 * pc->c3 * y * y + 12 * pc->c3 * x * x;
-
-    // Fill Jacobian in row-major order:
-    // J[i*4 + j] = dF_i / dq_j
-
-    // F0 = px
-    J[0 * 4 + 0] = Type(0);
-    J[0 * 4 + 1] = Type(0);
-    J[0 * 4 + 2] = Type(1);
-    J[0 * 4 + 3] = Type(0);
-
-    // F1 = py
-    J[1 * 4 + 0] = Type(0);
-    J[1 * 4 + 1] = Type(0);
-    J[1 * 4 + 2] = Type(0);
-    J[1 * 4 + 3] = Type(1);
-
-    // F2 = -vx
-    J[2 * 4 + 0] = -dvx_dx;
-    J[2 * 4 + 1] = -dvx_dy;
-    J[2 * 4 + 2] = Type(0);
-    J[2 * 4 + 3] = Type(0);
-
-    // F3 = -vy
-    J[3 * 4 + 0] = -dvy_dx;
-    J[3 * 4 + 1] = -dvy_dy;
-    J[3 * 4 + 2] = Type(0);
-    J[3 * 4 + 3] = Type(0);
-}
-
-template <typename T> T _event(const T &t, const T *q, const T *args, const void *aux)
-{
-    // The event function, it is true when it is close to 0 (meaning y ~= x_poin).
-    const auto *pc = reinterpret_cast<const poinc_params<T> *>(aux);
-
-    return q[1] - pc->xpoin;
-}
-
-template <typename T> T _stop_event(const T &t, const T *q, const T *args, const void *aux)
-{
-    // A function that stops the ODE calculations if the energy goes out-of-bounds.
-    const auto *p = reinterpret_cast<const Parent_Poincare<T, Eigen::Array<T, -1, -1>, Eigen::Vector<T, -1>> *>(aux);
-
-    T E = p->energy(q);
-
-    return (lmath::abs(E - p->pc.ene) / p->pc.ene) - T(1e-6);
-}
-
-template <typename Type> class StopEvent : public PreciseEvent<Type, static_cast<size_t>(4)>
-{ // A custom ODE stop event.
-  public:
-    StopEvent(std::string name, ObjFun<Type> f, const void *pp)
-        : PreciseEvent<Type, static_cast<size_t>(4)>(name, f, 1, nullptr, false, 1e-10, pp)
-    {
+        out[0] = px;
+        out[1] = py;
+        out[2] = -vx;
+        out[3] = -vy;
     }
 
-    bool is_leathal() const override
-    {
-        return true;
-    };
-    bool is_stop_event() const override
-    {
-        return true;
-    };
-
-    StopEvent *clone() const override
-    {
-        return new StopEvent(*this);
-    };
 };
 
+
+template<typename T>
+struct MyObjFunc{
+
+    T point;
+
+    inline T operator()(const T& t, const T* q, const T* /*args*/) const{
+        return q[1] - point;
+    }
+
+};
+
+
+
+template<typename T>
+class MySolver : public ode::ObjectiveSolver<ode::RK45, T, 4, ode::SolverPolicy::Static, OdeSystem<T>, MySolver<T>, MyObjFunc<T>>{
+
+    using Base = ode::ObjectiveSolver<ode::RK45, T, 4, ode::SolverPolicy::Static, OdeSystem<T>, MySolver<T>, MyObjFunc<T>>;
+
+public:
+
+    MySolver(T xpoinc, T c1, T c2, T c3, T t0, const T* q0, size_t nsys, T rtol, T atol, T min_step=0, T max_step=ode::inf<T>(), T stepsize=0, int dir=1) : Base(
+        ode::ObjFunData<T, MyObjFunc<T>>{.func=MyObjFunc<T>{.point=xpoinc},
+                                         .ftol=1e-20, .dir=1}, OdeSystem<T>{.c1=c1, .c2=c2, .c3=c3}, t0, q0, 4, rtol, atol, min_step, max_step, stepsize, dir, std::vector<T>{}){}
+
+};
+
+
+
+
 template <typename Type, typename Type_Arr, typename Type_Vec> class Parent_Poincare
-{
-    friend Type _stop_event<Type>(const Type &t, const Type *q, const Type *args, const void *aux);
+{   
+    using Scalar = std::conditional_t<std::is_same_v<Type, MP_REAL>, lazy::LazyType<mpfr::mpreal>, Type>;
 
   public:
-    void print_results(Type_Arr results)
+    void print_results(const Type_Arr& results)
     {
         // A function used to print the orbits found by the algorithm in a
         // presentable manner.
@@ -179,7 +136,7 @@ template <typename Type, typename Type_Arr, typename Type_Vec> class Parent_Poin
         }
     }
 
-    Type_Arr calculate(Type_Vec particle, Type_Vec &q, bool first_only)
+    Type_Arr calculate(const Type_Vec& particle, Type_Vec &q, bool first_only)
     {
         q[0] = particle(0);
         q[1] = this->pc.xpoin;
@@ -193,43 +150,56 @@ template <typename Type, typename Type_Arr, typename Type_Vec> class Parent_Poin
             energy_error(i, 0) = std::numeric_limits<Type>::infinity();
         }
 
-        if (this->check_energy(q.data()) == false)
+        if (!(this->check_energy(q.data())))
         {
             // If the energy is out-of-bounds, return error (infinity).
 
             return energy_error;
         }
 
-        Type t0 = 0;
-        Type atol = 0;
-        Type rtol = Type(1e-4) * this->pc.err_goal;
-        Type min_step = 0;
+        // Type t0 = 0;
+        // Type atol = 0;
+        // Type rtol = Type(1e-4) * this->pc.err_goal;
+        // Type min_step = 0;
         constexpr size_t N = 4;
 
-        StopEvent<Type> stop_events("poincare_stop", _stop_event<Type>, this);
-        PreciseEvent<Type, N> events("poincare_sect", _event<Type>, 1, nullptr, false, 1e-20, &(this->pc));
+        std::array<Scalar, N> q0;
+        for (size_t i=0; i<N; i++){
+            q0[i] = q[i];
+        }
 
-        Array1D<Type, N> q0(q.data());
+        MySolver<Scalar> new_solver(this->pc.xpoin, pc.c1, pc.c2, pc.c3, Scalar(0), q0.data(), 4, Type(1e-4) * pc.err_goal, Type(0), Scalar(0), ode::inf<Type>(), pc.dt);
+        // new_solver.set_ics(0, q0.data(), this->pc.dt);
 
-        RK45<Type, N> solver({F, Jac, &(this->pc)}, t0, q0, rtol, atol, min_step, inf<Type>(), this->pc.dt, 1, {},
-                             {&events, &stop_events});
+        ode::Array2D<Type, 0, N> ode_results(this->pc.p, N);
 
-        Array2D<Type, 0, N> ode_results(this->pc.p, N);
+        auto failed = [&](const Scalar& t, const Scalar* q) LAMBDA_INLINE {
+            const Scalar& x = q[0];
+            const Scalar& y = q[1];
+            const Scalar& px = q[2];
+            const Scalar& py = q[3];
+
+            Scalar E = (px * px + py * py) / 2 + this->V(x, y);
+
+            Type error = (abs(E - this->pc.ene) / this->pc.ene);
+            return error > 1e-6 || t > 1000; // Stop if energy is close enough and we haven't exceeded a reasonable time limit
+        };
 
         int ev_counts = 0;
-        Type tmax = 1000;
 
-        while (ev_counts < this->pc.p && solver.t() < tmax && !solver.is_dead() && solver.advance_to_event())
+        while (ev_counts < this->pc.p && new_solver.advance())
         {
-            for (size_t ev : solver.event_col())
-            {
-                if (ev == 0)
-                {
-                    copy_array(ode_results.data() + N * ev_counts, solver.q().data(), N);
-                    ev_counts++;
+            // Store the located poincare section
+            if (new_solver.is_at_objective()){
+                for (size_t i = 0; i < N; i++){
+                    ode_results(ev_counts, i) = new_solver.vector()[i];
                 }
+                ev_counts++;
+            } else if (failed(new_solver.t(), new_solver.vector().data())){
+                break; // Stop if energy is close enough and we haven't exceeded a reasonable time limit
             }
         }
+
 
         if (ev_counts < this->pc.p)
         {
@@ -285,8 +255,12 @@ template <typename Type, typename Type_Arr, typename Type_Vec> class Parent_Poin
     }
 
   protected:
+
+    Parent_Poincare(const poinc_params<Type> &params, std::ostream *out_stream) : output(out_stream), pc(params){}
+
     std::ostream *output;
     poinc_params<Type> pc;
+
 #ifdef __MAC__
     dispatch_semaphore_t sem_lock;
 #else
@@ -311,11 +285,11 @@ template <typename Type, typename Type_Arr, typename Type_Vec> class Parent_Poin
         Type px = q[2];
         // Type py  = q[3];
         Type YY = 2 * (this->pc.ene - this->V(x, y));
-        Type YY1 = YY - lmath::pow(px, 2);
+        Type YY1 = YY - px*px;
 
         if (YY1 > 0)
         {
-            q[3] = lmath::sqrt(YY - lmath::pow(px, 2));
+            q[3] = sqrt(YY - px*px);
 
             return true;
         }
@@ -358,8 +332,8 @@ template <typename Type, typename Type_Arr, typename Type_Vec> class Parent_Poin
 
     Type V(Type x, Type y) const
     {
-        return this->pc.c1 * (lmath::pow(x, 2) + lmath::pow(y, 2)) + this->pc.c2 * y -
-               this->pc.c3 * (lmath::pow(x, 4) + lmath::pow(y, 4) - 6 * lmath::pow(x, 2) * lmath::pow(y, 2));
+        return this->pc.c1 * (x * x + y * y) + this->pc.c2 * y -
+               this->pc.c3 * (x * x * x * x + y * y * y * y - 6 * x * x * y * y);
     }
 
     Type energy(const Type *q) const
@@ -369,7 +343,7 @@ template <typename Type, typename Type_Arr, typename Type_Vec> class Parent_Poin
         Type px = q[2];
         Type py = q[3];
 
-        return ((lmath::pow(px, 2) + lmath::pow(py, 2)) / 2) + this->V(x, y);
+        return ((px * px + py * py) / 2) + this->V(x, y);
     }
 };
 

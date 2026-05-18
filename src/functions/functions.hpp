@@ -6,11 +6,11 @@
 double uniform_real(double a, double b);
 double gauss_distribution(double mean, double stddev);
 
-MPFR_ARR double_to_mpfr_ARR(DOUBLE_ARR arr);
-MPFR_VEC double_to_mpfr_VEC(DOUBLE_VEC vec);
+MPFR_ARR double_to_mpfr_ARR(MPFR_ARR& mp_arr, const DOUBLE_ARR& arr);
+MPFR_VEC double_to_mpfr_VEC(MPFR_VEC& mp_vec, const DOUBLE_VEC& vec);
 
 uint64_t uniform_int(uint64_t a, uint64_t b = INT_MAX);
 
-DOUBLE_ARR mpfr_to_double_ARR(MPFR_ARR arr);
+DOUBLE_ARR mpfr_to_double_ARR(DOUBLE_ARR& db_arr, const MPFR_ARR& arr);
 
 #endif

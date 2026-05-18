@@ -43,7 +43,7 @@ class Local_Classic_Internal : public Enhanced<Type, Type_Arr, Type_Vec, Type_Em
         this->initialize_arrays();
         this->evaluate_swarm("initial");
 
-        if (this->check_initial_particles() == false)
+        if (!(this->check_initial_particles()))
         {
             // If all the particles have out-of-bounds energy, return this error.
 
@@ -54,7 +54,7 @@ class Local_Classic_Internal : public Enhanced<Type, Type_Arr, Type_Vec, Type_Em
 
         this->swarm_evolution(success, swap_point);
 
-        if (success == true)
+        if (success)
         {
             // If an orbit is found, save it.
 

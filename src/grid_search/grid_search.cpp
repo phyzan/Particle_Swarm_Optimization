@@ -43,7 +43,7 @@ std::string leading_zeros(int grid_size, int current)
     return res;
 }
 
-MPFR_ARR *create_grid_bounds(MPFR_ARR original_bounds, int res, int &grid_size)
+MPFR_ARR *create_grid_bounds(const MPFR_ARR& original_bounds, int res, int &grid_size)
 {
     int dim = int(original_bounds.rows());           // Dimensions of the hyperspace.
     grid_size = int(pow(2, dim * res));              // The number of subspaces that will be created.
@@ -77,11 +77,13 @@ MPFR_ARR *create_grid_bounds(MPFR_ARR original_bounds, int res, int &grid_size)
     { // O(dim * grid_size).
         int cell = 0;
 
-        for (int j = 0; j < pow(dim_divisions, dim - i - 1); j++)
+        const int pow_div = static_cast<int>(std::round(pow(dim_divisions, dim - i - 1)));
+        for (int j = 0; j < pow_div; j++)
         { // This nested loop is not O(n^3).
             for (int bound = 0; bound < dim_divisions; bound++)
             { // It will always be O(grid_size).
-                for (int k = 0; k < (grid_size / pow(dim_divisions, dim - i)); k++)
+                const int repeat = static_cast<int>(std::round(pow(dim_divisions, dim - i)));
+                for (int k = 0; k < (grid_size / repeat); k++)
                 {                                                       // The three loops are needed to repeat
                     grid_bounds[cell](i, 0) = dim_bounds(i, bound);     // each dimension's boundaries in different
                     grid_bounds[cell](i, 1) = dim_bounds(i, bound + 1); // intervals, to create and store all of
@@ -95,7 +97,7 @@ MPFR_ARR *create_grid_bounds(MPFR_ARR original_bounds, int res, int &grid_size)
     return grid_bounds;
 }
 
-MPFR_ARR grid_search(grid_params gp, double swap_point, int precision, std::string Obj_F, bool constriction)
+MPFR_ARR grid_search(grid_params gp, double swap_point, int precision, const std::string& Obj_F, bool constriction)
 {
     int grid_size = 0;
     int running_tasks = 0;
@@ -198,13 +200,10 @@ MPFR_ARR grid_search(grid_params gp, double swap_point, int precision, std::stri
                 grid_minima = min; // just save the found minimum.
             }
             else if (min.size() != 0)
-            {                                                                     // else,
-                MPFR_ARR new_grid_minima(p.dim, grid_minima.cols() + min.cols()); // expand the grid_minima and
-
-                new_grid_minima.leftCols(grid_minima.cols()) = grid_minima; // save the new found minimum.
-                new_grid_minima.rightCols(min.cols()) = min;
-
-                grid_minima = new_grid_minima;
+            {   // Use conservativeResize to avoid creating temporary array
+                Eigen::Index old_cols = grid_minima.cols();
+                grid_minima.conservativeResize(p.dim, old_cols + min.cols());
+                grid_minima.rightCols(min.cols()) = min;
             }
 
             std::cout << "Thread " << leading_zeros(grid_size, id) << id << " exited." << std::endl;
@@ -223,7 +222,7 @@ MPFR_ARR grid_search(grid_params gp, double swap_point, int precision, std::stri
 
         gp.p.bounds = grid_bounds[launched_tasks];
 
-        threads.emplace_back(thread_task, launched_tasks, gp.p, gp.ep, gp.objp, precision, gp.type);
+        threads.emplace_back(thread_task, launched_tasks, gp.p, gp.ep, std::ref(gp.objp), precision, std::ref(gp.type));
 
         launched_tasks++;
         running_tasks++;

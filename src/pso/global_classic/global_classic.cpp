@@ -60,12 +60,13 @@ MPFR_ARR Global_Classic::fit()
     if (double_result.size() > 0)
     {
         // If a minimum is found, return it and exit.
-
-        return double_to_mpfr_ARR(double_result);
+        MPFR_ARR mp_result;
+        return double_to_mpfr_ARR(mp_result, double_result);
     }
 
     // Import the variables from the double model to the mpreal model.
-    this->gclc_in_mpreal->var_import(this->gclc_in_double->var_export());
+    static thread_local variables v;
+    this->gclc_in_mpreal->var_import(this->gclc_in_double->var_export(v));
 
     // Run from the swap point until the algorithm converges or
     // reaches maximum iterations, return the minimum (if one is found) and exit.

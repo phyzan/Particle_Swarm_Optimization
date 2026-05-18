@@ -2,3 +2,5 @@
 .vscode
 .clangd
 .clang-format
+.cache
+build

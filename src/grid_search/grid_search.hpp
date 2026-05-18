@@ -19,9 +19,10 @@ struct grid_params
 
 void init_folder(std::string &name);
 
-MPFR_ARR *create_grid_bounds(MPFR_ARR original_bounds, int res, int &grid_size);
+MPFR_ARR *create_grid_bounds(const MPFR_ARR& original_bounds, int res, int &grid_size);
 
-MPFR_ARR grid_search(grid_params gp, double swap_point, int precision = 64, std::string Obj_F = "Poincare",
+// Note: gp is passed by value intentionally as it's modified internally
+MPFR_ARR grid_search(grid_params gp, double swap_point, int precision = 64, const std::string& Obj_F = "Poincare",
                      bool constriction = false);
 
 #endif

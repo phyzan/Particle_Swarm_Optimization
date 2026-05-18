@@ -20,7 +20,7 @@ template <typename Type> struct enhanced_params
     Type lsh_radius = 0.2;
 };
 
-template <typename Type> enhanced_params<MP_REAL> enhanced_params_to_mpfr(enhanced_params<Type> params)
+template <typename Type> enhanced_params<MP_REAL> enhanced_params_to_mpfr(const enhanced_params<Type>& params)
 {
     enhanced_params<MP_REAL> mpfr_params;
 
@@ -35,7 +35,7 @@ template <typename Type> enhanced_params<MP_REAL> enhanced_params_to_mpfr(enhanc
     return mpfr_params;
 }
 
-template <typename Type> enhanced_params<double> enhanced_params_to_double(enhanced_params<Type> params)
+template <typename Type> enhanced_params<double> enhanced_params_to_double(const enhanced_params<Type>& params)
 {
     enhanced_params<double> double_params;
 
@@ -54,7 +54,7 @@ template <typename Type, typename Type_Arr, typename Type_Vec, typename Type_Emp
 class Enhanced : public PSO<Type, Type_Arr, Type_Vec, Type_Empty>
 {
   public:
-    Enhanced(const pso_params<Type, Type_Arr> &p, std::string var_type, int precision, bool constriction, bool LLSH,
+    Enhanced(const pso_params<Type, Type_Arr> &p, const std::string& var_type, int precision, bool constriction, bool LLSH,
              bool repulsion, std::ostream *output)
         : PSO<Type, Type_Arr, Type_Vec, Type_Empty>(p, var_type, precision, output)
     {
@@ -174,7 +174,7 @@ class Enhanced : public PSO<Type, Type_Arr, Type_Vec, Type_Empty>
 
         if (this->p.c1 + this->p.c2 <= 4)
         {
-            if (is_check == true)
+            if (is_check)
             {
                 (*this->output)
                     << "~> Error: It must be true that c1 + c2 > 4 for the constriction coefficient to be calculated."
@@ -186,7 +186,7 @@ class Enhanced : public PSO<Type, Type_Arr, Type_Vec, Type_Empty>
         {
             Type fi = this->p.c1 + this->p.c2;
 
-            this->con_coeff = lmath::abs((2 * this->ep.con_k) / (2 - fi - lmath::sqrt(lmath::pow(fi, 2) - 4 * fi)));
+            this->con_coeff = abs((2 * this->ep.con_k) / (2 - fi - sqrt(fi*fi - 4 * fi)));
 
             return true;
         }
@@ -199,33 +199,33 @@ class Enhanced : public PSO<Type, Type_Arr, Type_Vec, Type_Empty>
 
         if (this->result.size() > 0)
         {
+            // Preallocate z vector outside loop to avoid repeated allocation
+            Type_Vec z(this->p.dim);
+
             for (int i = 0; i < int(this->result.cols()); i++)
             {
-                Type_Vec d(this->p.popsize);
-                Type_Arr minimum_array(this->p.dim, this->p.popsize);
-
-                minimum_array = this->result.col(i).replicate(1, this->p.popsize);
-                d = (minimum_array - this->popul).colwise().norm();
+                // Get reference to current minimum to avoid repeated column access
+                auto minimum = this->result.col(i);
 
                 for (int j = 0; j < int(this->p.popsize); j++)
                 {
-                    if (d(j) <= this->ep.rep_radius)
-                    { // If a particle is in the repulsion radius,
-                        Type_Vec z(this->p.dim);
+                    // Compute distance directly without creating full replicated array
+                    Type dist = (this->popul.col(j) - minimum).matrix().norm();
 
-                        z = ((this->popul.col(j) - minimum_array.col(j)) /
-                             d(j)); // find the unitary vector z
-                                    // with direction opposite of the found minimum,
-                        this->popul.col(j) = this->popul.col(j) +
-                                             this->ep.rep_rho * z.array(); // multiply it with the repulsion strength
-                                                                           // (rho) and add it to the particle.
+                    if (dist <= this->ep.rep_radius && dist > 0)
+                    { // If a particle is in the repulsion radius,
+                        // find the unitary vector z with direction opposite of the found minimum,
+                        z = ((this->popul.col(j) - minimum) / dist);
+                        // multiply it with the repulsion strength (rho) and add it to the particle.
+                        this->popul.col(j) = this->popul.col(j) + this->ep.rep_rho * z.array();
+
                         if (this->bestpos.size() > 0)
                         {
                             this->bestpos.col(j) = this->popul.col(j);
                         }
                         if (this->fbestpos.size() > 0)
                         {
-                            this->fbestpos(j) = lmath::get_infinity<Type>();
+                            this->fbestpos(j) = ode::inf<Type>();
                         }
                     }
                 }
@@ -267,7 +267,7 @@ class Enhanced : public PSO<Type, Type_Arr, Type_Vec, Type_Empty>
             for (int i = 0; i < popsize; i++)
             {
                 // Initialize the best distance of a particle to infinity,
-                Type best_dist = lmath::get_infinity<Type>();
+                Type best_dist = ode::inf<Type>();
 
                 // find its closest neighbours (their indeces) and
                 Eigen::Vector<int, Eigen::Dynamic> particle_neighbours = lsh->find_idx(this->popul.col(i));
@@ -295,12 +295,8 @@ class Enhanced : public PSO<Type, Type_Arr, Type_Vec, Type_Empty>
         else
         {
             // If LSH is not set to true, proceed with the classic PSO algorithm.
-            A = this->bestpos.col(this->g).replicate(1, this->bestpos.cols());
-
-            for (int i = 0; i < this->bestpos.cols(); i++)
-            {
-                A.col(i) = this->bestpos.col(this->g);
-            }
+            // Use Eigen's replicate - no need for the redundant loop
+            A = this->bestpos.col(this->g).replicate(1, popsize);
         }
 
         R1 = Type_Arr::NullaryExpr(dim, popsize, [&]() { return Type(uniform_real(0, 1)); });

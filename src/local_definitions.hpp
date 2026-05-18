@@ -2,8 +2,8 @@
 #define __MP_DEF__
 
 #include <cmath>
-#include <limits>
 #include <unsupported/Eigen/MPRealSupport>
+#include <lazy/mpfrLazy.hpp>
 
 #ifndef MP_REAL
 #define MP_REAL mpfr::mpreal
