@@ -41,16 +41,15 @@ struct OdeSystem{
 
     T c1, c2, c3;
 
-    template<typename R>
-    FORCE_INLINE void Rhs(R* out, const R& t, const R* q, const R* args) const{
+    NDSPAN_INLINE void Rhs(auto* out, const auto& t, const auto* q, const auto* args) const{
 
-        const R &x = q[0];
-        const R &y = q[1];
-        const R &px = q[2];
-        const R &py = q[3];
+        const auto &x = q[0];
+        const auto &y = q[1];
+        const auto &px = q[2];
+        const auto &py = q[3];
 
-        R vx = 2 * c1 * x - 4 * c3 * x * x * x + 12 * c3 * x * y * y;
-        R vy = 2 * c1 * y + c2 - 4 * c3 * y * y * y + 12 * c3 * y * x * x;
+        auto vx = 2 * c1 * x - 4 * c3 * x * x * x + 12 * c3 * x * y * y;
+        auto vy = 2 * c1 * y + c2 - 4 * c3 * y * y * y + 12 * c3 * y * x * x;
 
         out[0] = px;
         out[1] = py;
@@ -83,7 +82,7 @@ public:
 
     MySolver(T xpoinc, T c1, T c2, T c3, T t0, const T* q0, size_t nsys, T rtol, T atol, T min_step=0, T max_step=ode::inf<T>(), T stepsize=0, int dir=1) : Base(
         ode::ObjFunData<T, MyObjFunc<T>>{.func=MyObjFunc<T>{.point=xpoinc},
-                                         .ftol=1e-20, .dir=1}, OdeSystem<T>{.c1=c1, .c2=c2, .c3=c3}, t0, q0, 4, rtol, atol, min_step, max_step, stepsize, dir, std::vector<T>{}){}
+                                         .ftol=0, .dir=1}, OdeSystem<T>{.c1=c1, .c2=c2, .c3=c3}, t0, q0, 4, rtol, atol, min_step, max_step, stepsize, dir, std::vector<T>{}){}
 
 };
 
@@ -173,7 +172,7 @@ template <typename Type, typename Type_Arr, typename Type_Vec> class Parent_Poin
 
         ode::Array2D<Type, 0, N> ode_results(this->pc.p, N);
 
-        auto failed = [&](const Scalar& t, const Scalar* q) LAMBDA_INLINE {
+        auto failed = [&](const Scalar& t, const Scalar* q) NDSPAN_LAMBDA_INLINE {
             const Scalar& x = q[0];
             const Scalar& y = q[1];
             const Scalar& px = q[2];

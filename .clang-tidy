@@ -71,5 +71,5 @@ CheckOptions:
 ExtraArgs:
   - '-std=c++20'
   - '-I/usr/local/include'
-  - '-DMPREAL'
-  - '-DNO_ODE_WARN'
+  - '-DDPK_MPREAL'
+  - '-DDPK_NO_WARN'
