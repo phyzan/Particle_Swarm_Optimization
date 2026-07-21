@@ -7,7 +7,7 @@
 #include <odepack/ode/Core/ObjectiveSolver.hpp>
 #include <odepack/ode/Tools.hpp>
 #include <odepack/odepack.hpp>
-#include <lazy/mpfrLazy.hpp>
+#include <lazy/apps/mpfrLazy.hpp>
 #include "../../local_definitions.hpp"
 
 #ifdef __MAC__

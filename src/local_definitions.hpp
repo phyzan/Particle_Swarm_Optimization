@@ -3,7 +3,7 @@
 
 #include <cmath>
 #include <unsupported/Eigen/MPRealSupport>
-#include <lazy/mpfrLazy.hpp>
+#include <lazy/apps/mpfrLazy.hpp>
 
 #ifndef MP_REAL
 #define MP_REAL mpfr::mpreal
