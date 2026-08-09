@@ -22,7 +22,7 @@ else()
 endif()
 
 set(ODEPACK_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/odepack)
-set(LAZY_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/lazy)
+set(LAZY_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/xdiff/external/lazy)
 set(EIGEN_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/eigen)
 
 set(ODEPACK_ENABLE_MPREAL ON CACHE BOOL "Enable MPFR multi-precision support" FORCE)
