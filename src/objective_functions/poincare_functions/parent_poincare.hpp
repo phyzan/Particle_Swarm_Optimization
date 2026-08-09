@@ -180,7 +180,7 @@ template <typename Type, typename Type_Arr, typename Type_Vec> class Parent_Poin
 
             Scalar E = (px * px + py * py) / 2 + this->V(x, y);
 
-            Type error = (abs(E - this->pc.ene) / this->pc.ene);
+            Scalar error = (abs(E - this->pc.ene) / this->pc.ene);
             return error > 1e-6 || t > 1000; // Stop if energy is close enough and we haven't exceeded a reasonable time limit
         };
 

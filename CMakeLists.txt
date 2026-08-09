@@ -31,6 +31,7 @@ add_subdirectory(${ODEPACK_ROOT} external/odepack)
 add_library(lazy INTERFACE)
 add_library(lazy::lazy ALIAS lazy)
 target_include_directories(lazy INTERFACE ${LAZY_ROOT}/include)
+target_compile_definitions(lazy INTERFACE LAZY_MPFR_RND=MPFR_RNDN)
 
 add_library(eigen INTERFACE)
 add_library(eigen::eigen ALIAS eigen)
