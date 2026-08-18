@@ -22,16 +22,14 @@ else()
 endif()
 
 set(ODEPACK_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/odepack)
-set(LAZY_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/xdiff/external/lazy)
 set(EIGEN_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/eigen)
 
-set(ODEPACK_ENABLE_MPREAL ON CACHE BOOL "Enable MPFR multi-precision support" FORCE)
+set(LAZY_MPFR_RND "MPFR_RNDN" CACHE STRING "Rounding mode for lazy's MPFR support" FORCE)
 add_subdirectory(${ODEPACK_ROOT} external/odepack)
 
-add_library(lazy INTERFACE)
+# odepack's bundled xdiff submodule already defines the `lazy` target (and
+# LAZY_MPFR_RND defaults to MPFR_RNDN there); just alias it for consumers here.
 add_library(lazy::lazy ALIAS lazy)
-target_include_directories(lazy INTERFACE ${LAZY_ROOT}/include)
-target_compile_definitions(lazy INTERFACE LAZY_MPFR_RND=MPFR_RNDN)
 
 add_library(eigen INTERFACE)
 add_library(eigen::eigen ALIAS eigen)

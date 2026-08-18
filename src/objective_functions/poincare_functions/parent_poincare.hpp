@@ -74,15 +74,15 @@ struct MyObjFunc{
 
 
 template<typename T>
-class MySolver : public ode::ObjectiveSolver<ode::RK45, T, 4, ode::SolverPolicy::Static, OdeSystem<T>, MySolver<T>, MyObjFunc<T>>{
+class MySolver : public ode::ObjectiveSolver<ode::RK45, T, 4, ode::SolverPolicy::Static, OdeSystem<T>, MyObjFunc<T>>{
 
-    using Base = ode::ObjectiveSolver<ode::RK45, T, 4, ode::SolverPolicy::Static, OdeSystem<T>, MySolver<T>, MyObjFunc<T>>;
+    using Base = ode::ObjectiveSolver<ode::RK45, T, 4, ode::SolverPolicy::Static, OdeSystem<T>, MyObjFunc<T>>;
 
 public:
 
-    MySolver(T xpoinc, T c1, T c2, T c3, T t0, const T* q0, size_t nsys, T rtol, T atol, T min_step=0, T max_step=ode::inf<T>(), T stepsize=0, int dir=1) : Base(
+    MySolver(T xpoinc, T c1, T c2, T c3, T t0, const T* q0, T rtol, T atol, T min_step=0, T max_step=ode::inf<T>(), T stepsize=0, int dir=1) : Base(
         ode::ObjFunData<T, MyObjFunc<T>>{.func=MyObjFunc<T>{.point=xpoinc},
-                                         .ftol=0, .dir=1}, OdeSystem<T>{.c1=c1, .c2=c2, .c3=c3}, t0, q0, 4, rtol, atol, min_step, max_step, stepsize, dir, std::vector<T>{}){}
+                                         .ftol=0, .dir=1}, OdeSystem<T>{.c1=c1, .c2=c2, .c3=c3}, t0, ode::View1D<T, 4>{q0}, rtol, atol, min_step, max_step, stepsize, dir, std::vector<T>{}){}
 
 };
 
@@ -167,7 +167,7 @@ template <typename Type, typename Type_Arr, typename Type_Vec> class Parent_Poin
             q0[i] = q[i];
         }
 
-        MySolver<Scalar> new_solver(this->pc.xpoin, pc.c1, pc.c2, pc.c3, Scalar(0), q0.data(), 4, Type(1e-4) * pc.err_goal, Type(0), Scalar(0), ode::inf<Type>(), pc.dt);
+        MySolver<Scalar> new_solver(this->pc.xpoin, pc.c1, pc.c2, pc.c3, Scalar{0}, q0.data(), Type(1e-4) * pc.err_goal, Type{0}, Scalar{0}, ode::inf<Type>(), pc.dt);
         // new_solver.set_ics(0, q0.data(), this->pc.dt);
 
         ode::Array2D<Type, 0, N> ode_results(this->pc.p, N);
