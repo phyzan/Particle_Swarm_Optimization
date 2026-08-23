@@ -4,9 +4,9 @@
 
 #include <iostream>
 #include <lazy/lazy.hpp>
-#include <odepack/ode/Core/ObjectiveSolver.hpp>
-#include <odepack/ode/Tools.hpp>
-#include <odepack/odepack.hpp>
+#include <odecraft/Core/ObjectiveSolver.hpp>
+#include <odecraft/Tools.hpp>
+#include <odecraft/odecraft.hpp>
 #include <lazy/apps/mpfrLazy.hpp>
 #include "../../local_definitions.hpp"
 
@@ -41,7 +41,7 @@ struct OdeSystem{
 
     T c1, c2, c3;
 
-    NDSPAN_INLINE void Rhs(auto* out, const auto& t, const auto* q, const auto* args) const{
+    NDSPAN_INLINE void Rhs(auto* out, const auto& t, const auto* q) const{
 
         const auto &x = q[0];
         const auto &y = q[1];
@@ -65,7 +65,7 @@ struct MyObjFunc{
 
     T point;
 
-    inline T operator()(const T& t, const T* q, const T* /*args*/) const{
+    inline T operator()(const T& t, const T* q) const{
         return q[1] - point;
     }
 
@@ -82,7 +82,7 @@ public:
 
     MySolver(T xpoinc, T c1, T c2, T c3, T t0, const T* q0, T rtol, T atol, T min_step=0, T max_step=ode::inf<T>(), T stepsize=0, int dir=1) : Base(
         ode::ObjFunData<T, MyObjFunc<T>>{.func=MyObjFunc<T>{.point=xpoinc},
-                                         .ftol=0, .dir=1}, OdeSystem<T>{.c1=c1, .c2=c2, .c3=c3}, t0, ode::View1D<T, 4>{q0}, rtol, atol, min_step, max_step, stepsize, dir, std::vector<T>{}){}
+                                         .ftol=0, .dir=1}, OdeSystem<T>{.c1=c1, .c2=c2, .c3=c3}, t0, ode::View1D<T, 4>{q0}, rtol, atol, min_step, max_step, stepsize, dir){}
 
 };
 

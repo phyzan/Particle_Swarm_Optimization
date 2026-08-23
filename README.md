@@ -114,8 +114,7 @@ This project depends on the following:
 - MPFR and GMP development libraries
 - OpenMP (Linux)
 - Git submodules:
-    - `external/odepack`
-    - `external/lazy`
+    - `external/odecraft`
     - `external/eigen`
 
 After cloning, initialize submodules:
@@ -150,7 +149,7 @@ The testing and production of this project was done on Linux Ubuntu 22.04 and on
 # Credits
 
 - <a id="ref-1"></a>Katsanikas Μ., Bakos Κ. and Wiggins S. [2026], The Computation of Periodic Orbits in Hamiltonian Systems Using Swarm Intelligence, International Journal of Bifurcation and Chaos, 36, 2650102.
-- [Foivos Zanias](https://github.com/phyzan), for the creation of the [ODE pack](https://github.com/phyzan/odepack) used for the implementation of this project, as well as insights for the general implementation.
+- [Foivos Zanias](https://github.com/phyzan), for the creation of the [OdeCraft](https://github.com/phyzan/odecraft) used for the implementation of this project, as well as insights for the general implementation.
 
 # Versions
 

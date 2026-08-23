@@ -21,13 +21,14 @@ else()
     find_package(OpenMP REQUIRED)
 endif()
 
-set(ODEPACK_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/odepack)
+set(ODECRAFT_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/odecraft)
 set(EIGEN_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/eigen)
 
 set(LAZY_MPFR_RND "MPFR_RNDN" CACHE STRING "Rounding mode for lazy's MPFR support" FORCE)
-add_subdirectory(${ODEPACK_ROOT} external/odepack)
+# set(DPK_NO_NAN_CHECK "DPK_NO_NAN_CHECK" CACHE STRING "No nan check" FORCE)
+add_subdirectory(${ODECRAFT_ROOT} external/odecraft)
 
-# odepack's bundled xdiff submodule already defines the `lazy` target (and
+# odecraft's bundled xdiff submodule already defines the `lazy` target (and
 # LAZY_MPFR_RND defaults to MPFR_RNDN there); just alias it for consumers here.
 add_library(lazy::lazy ALIAS lazy)
 
@@ -51,8 +52,8 @@ set(MPFR_LIBS mpfr gmp)
 
 add_library(pso_deps INTERFACE)
 add_library(pso::deps ALIAS pso_deps)
-target_link_libraries(pso_deps INTERFACE odepack::odepack lazy::lazy eigen::eigen ${MPFR_LIBS})
-target_include_directories(pso_deps INTERFACE ${ODEPACK_ROOT}/include)
+target_link_libraries(pso_deps INTERFACE odecraft::odecraft lazy::lazy eigen::eigen ${MPFR_LIBS})
+target_include_directories(pso_deps INTERFACE ${ODECRAFT_ROOT}/include)
 
 # def_demo
 add_executable(def_demo

@@ -1,8 +1,7 @@
-[submodule "external/odepack"]
-	path = external/odepack
-	url = https://github.com/phyzan/odepack
-	branch = main
 [submodule "external/eigen"]
 	path = external/eigen
 	url = https://gitlab.com/libeigen/eigen.git
 	branch = 3.4
+[submodule "external/odecraft"]
+	path = external/odecraft
+	url = https://github.com/phyzan/odecraft
