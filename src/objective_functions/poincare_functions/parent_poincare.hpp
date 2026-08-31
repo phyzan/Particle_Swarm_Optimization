@@ -41,7 +41,7 @@ struct OdeSystem{
 
     T c1, c2, c3;
 
-    NDSPAN_INLINE void Rhs(auto* out, const auto& t, const auto* q) const{
+    NDSPAN_INLINE void Rhs(auto* out, const auto& t, auto q) const{
 
         const auto &x = q[0];
         const auto &y = q[1];
@@ -74,9 +74,9 @@ struct MyObjFunc{
 
 
 template<typename T>
-class MySolver : public ode::ObjectiveSolver<ode::RK45, T, 4, ode::SolverPolicy::Static, OdeSystem<T>, MyObjFunc<T>>{
+class MySolver : public ode::ObjectiveSolver<ode::Stepper::RK45, T, 4, ode::SolverPolicy::Static, OdeSystem<T>, MyObjFunc<T>>{
 
-    using Base = ode::ObjectiveSolver<ode::RK45, T, 4, ode::SolverPolicy::Static, OdeSystem<T>, MyObjFunc<T>>;
+    using Base = ode::ObjectiveSolver<ode::Stepper::RK45, T, 4, ode::SolverPolicy::Static, OdeSystem<T>, MyObjFunc<T>>;
 
 public:
 
