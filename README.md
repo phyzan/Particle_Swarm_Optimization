@@ -32,20 +32,6 @@ Two consequences shape the whole program:
 
 ## Quick start
 
-```sh
-git clone --recursive https://github.com/phyzan/Particle_Swarm_Optimization
-cd PSO
-cmake -S . -B build
-cmake --build build -j4
-./build/pso input.toml
-```
-
-Configure with much greater performance using
-```sh
-cmake -S . -B build -DPSO_USE_MPREAL_SWAP=OFF
-```
-as explained [later](#The-precision-swap).
-
 You need a C++20 compiler, CMake 3.20 or newer, and the MPFR and GMP
 development libraries. For Debian / Ubuntu:
 
@@ -57,6 +43,31 @@ For macOS:
 ```sh
 brew install mpfr gmp
 ```
+
+Build the project:
+```sh
+git clone --recursive https://github.com/phyzan/Particle_Swarm_Optimization
+cd Particle_Swarm_Optimization
+cmake -S . -B build
+cmake --build build -j4
+```
+and run the executable from the example parameter file `input.toml`:
+```sh
+./build/pso input.toml
+```
+or build and run a demo:
+```sh
+cmake --build build --target local_demo
+./build/local_demo
+```
+
+
+Configure with much greater performance using
+```sh
+cmake -S . -B build -DPSO_USE_MPREAL_SWAP=OFF
+```
+as explained [later](#The-precision-swap).
+
 
 On macOS, `libomp` is optional: Apple's clang ships no OpenMP runtime, so the
 build falls back to Grand Central Dispatch, which is always present. Install
