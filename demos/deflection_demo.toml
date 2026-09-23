@@ -1,0 +1,54 @@
+# Mirrors deflection_demo.cpp from the reference implementation:
+#   Deflection_Init(p, ep, 1e-5, 50, 0, 100, false, false, true)
+#                          swap  l shift prec  constr  LLSH  repulsion
+# so: global topology (LLSH false), repulsion on, 100-bit exact phase,
+# and fit(3) -> three runs.
+
+[domain]
+lower = [-2.5, -2.5]
+upper = [ 2.5,  2.5]
+bound_policy = "none"
+
+[convergence]
+objfun_target = 0.0
+objfun_tol    = 1e-8
+swap_tol      = 1e-5
+mpfr_prec     = 100
+max_iter      = 15000
+
+[dynamics]
+pop_size      = 20
+c1            = 2.0
+c2            = 1.7
+w_max         = 0.5
+w_min         = 0.01
+velocity_init = "uniform01"
+
+[topology]
+kind = "global"           # LLSH = false
+
+[strategy]
+kind = "deflection"
+
+[deflection]
+runs             = 3      # pso->fit(3)
+lambda           = 50.0   # the l argument
+shift            = 0.0    # the constant argument
+stop_when_barren = true
+
+[repulsion]
+enabled = true            # the repulsion argument
+radius  = 0.25            # ep.rep_radius
+rho     = 3.0             # ep.rep_rho
+
+[poincare]
+energy      = 17.0
+section     = -1.8019693
+n_crossings = 1
+integrator  = "RK45"
+rtol        = 1e-12
+metric      = "weighted"
+
+[execution]
+seed    = 42
+threads = 8

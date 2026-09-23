@@ -1,0 +1,41 @@
+# Mirrors global_classic_demo.cpp from the reference implementation.
+# Global_Classic passes no enhanced parameters at all: one attractor for the
+# whole swarm, no LSH, no repulsion, no constriction.
+
+[domain]
+lower = [-2.5, -0.5]      # note: NOT the square the other demos use
+upper = [ 2.5,  0.5]
+bound_policy = "none"
+
+[convergence]
+objfun_target = 0.0
+objfun_tol    = 1e-8
+swap_tol      = 1e-5
+mpfr_prec     = 64        # Global_Classic_Init default
+max_iter      = 15000
+
+[dynamics]
+pop_size      = 20
+c1            = 2.0
+c2            = 1.7
+w_max         = 0.5
+w_min         = 0.01      # pso_params default; the demo never set it
+velocity_init = "uniform01"
+
+[topology]
+kind = "global"
+
+[strategy]
+kind = "single"
+
+[poincare]
+energy      = 17.0
+section     = -1.8019693
+n_crossings = 1
+integrator  = "RK45"
+rtol        = 1e-12
+metric      = "weighted"
+
+[execution]
+seed    = 42
+threads = 8

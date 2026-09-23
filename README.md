@@ -1,166 +1,326 @@
 # Particle Swarm Optimisation [![status: active](https://github.com/GIScience/badges/raw/master/status/active.svg)](https://github.com/GIScience/badges#active) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This is an implementation of the Particle Swarm Optimisation (PSO) algorithm, which was used to conduct the executions for the publication [\[1\]](#ref-1).
+Particle swarm optimisation, applied to finding **periodic orbits** in a
+two-degree-of-freedom Hamiltonian system.
 
-The PSO algorithm is a Swarm intelligence method that solves global optimisation problems. More information about how the algorithm functions can be found in the publication [\[1\]](#ref-1).
+## Overview
 
-## Objective function
+A swarm of candidate points wanders a 2D search space. Each one is scored by a
+function you choose, the good ones attract the others, and the swarm converges
+on a minimum. That is particle swarm optimisation, and it is about fifty lines
+of arithmetic.
 
-The algorithm converges to a minumum by utilizing the objective function provided by the user. The objective function is used to improve the position of the particles in the space.
+Everything else in this repository exists because of *which* function is being
+minimised.
 
-As a demo objective function, a minimization function in a Poincaré Surface Section of a 4-dimensional phase-space is provided, the same as the one that is used in the calculations of the publication executions. The user may add their own objective function. There is guidance provided in the comments in `src/objective_functions` template file.
+The default one works like this. Pick a starting point in a physical system.
+Let it evolve in time. Wait until it comes back to a chosen slice of the space
+— a *surface of section* — and measure how far it landed from where it began.
+If that distance is zero, the trajectory closed on itself: you have found a
+**periodic orbit**. So "minimise the return distance" and "find a periodic
+orbit" are the same instruction.
 
-It is important to note that the parameters of PSO and the Objective function have to be correctly tuned in order for the algorithm to correctly converge and identify global (or local) minima. If the parameters are not set correctly the algorithm may have undefined behaviours like not converging to a minimum or converging only to one minimum, unable to further explore the defined space.
+Two consequences shape the whole program:
 
-PSO may also work with objective functions that locate maxima instead of minima in a space.
+- **Evaluating the function is expensive.** Each one integrates a differential
+  equation. A run does hundreds of thousands of them, so the objective, not the
+  swarm, is where all the time goes.
+- **The answer must be very precise.** `double` runs out of accuracy around
+  1e-6, and the target is 1e-8 or better. The program therefore starts in
+  `double` and switches to arbitrary-precision arithmetic partway through.
+  That switch is the most unusual thing here and is explained below.
 
-## Algorithm variants
-
-A small explaination of the PSO variants that are provided in this implementation.
-
-### Classic Global PSO
-
-The global variant of PSO is the classic variant of the algorithm as described in [Recent approaches to global optimization problems
-through Particle Swarm Optimization](https://www.researchgate.net/publication/228746170_Recent_approaches_to_global_optimization_problems_through_Particle_Swarm_Optimization).
-
-### Classic Local PSO
-
-The local variant of the algorithm creates smaller neighbourhoods, resulting in more efficient searching of the space. This way if one neighbourhood gets stuck, the others can compensate by continuing the exploration of the space. To create said neighbourhoods, the LSH algorithm is used. Local PSO is also more optimal than the Global version in high-dimensional spaces, since it projects them to lower dimensions with the use of LSH, significantly improving performance.
-
-### Deflection (with or without repulsion)
-
-Deflection (and repulsion) is a technique that enhances the performance of Global or Local PSO and allows it to locate more than one minima. Essentially it is a measure that prevents the algorithm from converging to the same minimum multiple times. This technique is not as good as Grid Search for multiple minima discovery in a space.
-
-### Grid Search
-
-A method that disects the space into smaller subspaces and executes the global or local PSO variants in the latter. It is a more consistent way of finding minima in the space, if the space is disected into small enough subspaces. The way the number of subspaces is calculated is  $subspaces = 2^{dim * res}$, where `dim` is the dimension of the space and `res` is the resolution, a user defined variable. For example, if the space is 3D and the user defines resolution as 2, we have $2^{3*2}=64$ subspaces.
-
-## Parameters
-
-The parameters can be defined using the structure templates found in the header files. Most parameters have default values that might or might not be good for other objective functions.
-
-- PSO parameters
-
-| Parameter |                          Information                          |
-|-----------|---------------------------------------------------------------|
-|  dim      | The number of dimensions that the PSO particles have          |
-|  max_it   | The maximum number of iterations of the algorithm             |
-|  popsize  | The size of the population (Number of particles)              |
-|  c1       | [Recent approaches to global optimization problems through Particle Swarm Optimization](https://www.researchgate.net/publication/228746170_Recent_approaches_to_global_optimization_problems_through_Particle_Swarm_Optimization)                                                 |
-|  c2       | [Recent approaches to global optimization problems through Particle Swarm Optimization](https://www.researchgate.net/publication/228746170_Recent_approaches_to_global_optimization_problems_through_Particle_Swarm_Optimization)                                                 |
-|  gm       | The minimum (or maximum) value that has to be achieved        |
-|  max_w    | [Recent approaches to global optimization problems through Particle Swarm Optimization](https://www.researchgate.net/publication/228746170_Recent_approaches_to_global_optimization_problems_through_Particle_Swarm_Optimization)                                                 |
-|  min_w    | [Recent approaches to global optimization problems through Particle Swarm Optimization](https://www.researchgate.net/publication/228746170_Recent_approaches_to_global_optimization_problems_through_Particle_Swarm_Optimization)                                                 |
-|  err_goal | The error tolerance that determines if convergence is achieved|
-|  bounds   | The boundaries of the space of the particles                  |
-
-- Enhanced Parameters
-
-| Parameter |                           Information                            |
-|-----------|------------------------------------------------------------------|
-|lsh_k      | The number of h() functions used for the hash of a hash-table    |
-|lsh_w      | [Locality-Sensitive Hashing for Finding Nearest Neighbors](https://www.slaney.org/malcolm/yahoo/Slaney2008-LSHTutorial.pdf)                                                    |
-|lsh_L      | The number of hash-tables                                        |
-|con_k      | The constriction value for the velocity of PSO                   |
-|rep_rho    | How strong the repulsion from the repulsion zone will be         |
-|rep_radius | The hyper-sphere radius of the repulsion zone                    |
-|lsh_radius | The hyper-sphere radius of the LSH search-space around a particle|
-
-- Grid Parameters
-
-| Parameter       |                                    Information                                     |
-|-----------------|------------------------------------------------------------------------------------|
-|resolution       | The resolution defines how much the space will be disected                         |
-|batch_size       | How many threads will run at the same time                                         |
-|starting_subspace| Sets the subspace that gridsearch will visit first, ignoring all the previous ones |
-|dest             | The destination folder for the output of the program                               |
-|type             | The algorithm variant that will be used, either `Global_Classic` or `Local_Classic`|
-|gp               | A struct with PSO, Enhanced and Objective Function parameters                      |
-
-- Objective Function Parameters
-    - Poincare Parameters
-
-| Parameter |                           Information                           |
-|-----------|-----------------------------------------------------------------|
-|  p        | Number of sections of an orbit and the PSS                      |
-|  threads  | Number of threads used by the objective function (only on Linux)|
-|  c1       |Controls parabolic curvature                                     |
-|  c2       |Controls a linear tilt or slope in the y-direction               |
-|  c3       |Controls higher-order distortion                                 |
-|  dt       |The initial stepsize for the ODE integration                     |
-|  ene      | Energy of a 2D caldera like potential energy surface (PES)      |
-|  xpoin    | The Y coordinate                                                |
-|  err_goal | The error tolerance that determines if convergence is achieved  |
-
-For a more deep understanding of what each parameter does, it is advised to consult the publication. The default values are not suggested values, they are placeholders. Every system has different values that are efficient and they could differ a lot from the default ones.
-
-- Swap Point
-
-All methods have a user-set parameter called `swap_point`. Swap point is a variable swap from `double` to `MPReal`. `Double` variables are fast when used in calculations, but can accumulate a significant amount of error when the calculations require great accuracy ($1e-6$ or smaller).
-
-On the other hand, `MPReal` variables make the calculations really slow (depending on the `precision` set by the user, generally around 200 times slower), but the calculations become 100% accurate.
-
-Since both accuracy and speed are important, `swap_point` is essentially the point where `double` accuracy starts degrading. A good `swap_point` is $1e-6$. As a result, we can utilize both the speed of `double` variables and the accuracy of `MPReal` variables, without significantly sacrificing either of the two.
-
-If the user wants to use only `double` variables, they can set the `swap_point` to be equal to the convergence point (e.g. if the algorithm converges to -1, then `swap_point = -1`). If the user wants to use only `MPReal` variables, set the swap_point to a significantly large number (e.g. 1000).
-
-# Compiling the project
-
-## Dependencies
-
-This project depends on the following:
-
-
-- MPFR and GMP development libraries
-- OpenMP (Linux)
-- Git submodules:
-    - `external/odecraft`
-    - `external/eigen`
-
-After cloning, initialize submodules:
+## Quick start
 
 ```sh
-git submodule update --init --recursive
+git clone --recursive https://github.com/phyzan/Particle_Swarm_Optimization
+cd PSO
+cmake -S . -B build
+cmake --build build -j4
+./build/pso input.toml
 ```
 
-Then configure and build (with release mode by default) the demos from a clean build directory:
+Configure with much greater performance using
+```sh
+cmake -S . -B build -DPSO_USE_MPREAL_SWAP=OFF
+```
+as explained [later](#The-precision-swap).
+
+You need a C++20 compiler, CMake 3.20 or newer, and the MPFR and GMP
+development libraries. For Debian / Ubuntu:
 
 ```sh
-mkdir -p build
-cd build
-cmake ..
-make -j
+sudo apt install libmpfr-dev libgmp-dev libomp-dev      # Debian / Ubuntu
 ```
 
-To explicitly select a build type:
+For macOS:
+```sh
+brew install mpfr gmp
+```
+
+On macOS, `libomp` is optional: Apple's clang ships no OpenMP runtime, so the
+build falls back to Grand Central Dispatch, which is always present. Install
+`libomp` as well if you would rather use OpenMP. Configure prints which one it
+picked:
+
+```
+-- Objective evaluation parallelised with: Grand Central Dispatch
+```
+
+On that path `execution.threads` is advisory rather than a cap — libdispatch
+sizes its own pool from the machine and the current load.
+
+### Reading the output
+
+```
+  [double] residual 4.83e-08 below swap_tol after 202 iterations; continuing at 64 bits
+  [mpreal] converged after 214 iterations, residual 8.51e-09
+
+1 minimum found
+  orbit 1
+    x = -0.000128774932   px = -0.000102234032
+```
+
+- **residual** — how far the current best candidate is from solving the
+  problem. Smaller is better; the run stops when it drops under `objfun_tol`.
+- **`[double]` then `[mpreal]`** — the two precision phases. The handover
+  happened at iteration 202; the iteration count carries across, so the run
+  used 214 in total.
+- **orbit** — the answer. For this problem a point is `(x, px)`: a position and
+  a momentum.
+
+## The input file
+
+Everything is set in a TOML file. Nothing is hardcoded, and the program reads
+exactly one file, named on the command line (default `input.toml`).
+
+```toml
+[domain]                      # where to search
+lower = [-2.5, -0.5]          # required: no sensible default exists
+upper = [ 2.5,  0.5]
+
+[convergence]                 # when to stop
+objfun_target = 0.0           # the value to reach
+objfun_tol    = 1e-8          # success when |value - target| <= this
+swap_tol      = 1e-5          # switch to high precision below this
+mpfr_prec     = 100           # bits of precision after the switch
+max_iter      = 15000         # budget, shared by BOTH phases
+
+[dynamics]                    # how the swarm moves
+pop_size = 20                 # number of candidate points
+c1 = 2.0                      # pull toward a point's own best find
+c2 = 1.7                      # pull toward its neighbours' best find
+
+[strategy]
+kind = "single"               # single | deflection | grid
+
+[objective]
+kind = "poincare"             # poincare | analytic
+
+[poincare]                    # the physics
+energy      = 17.0
+section     = -1.8019693
+n_crossings = 1               # 1 = simple orbit, 2 = orbit of double the period
+integrator  = "RK45"          # Euler RK4 RK23 RK45 DOP853 BDF
+rtol        = 1e-12           # integration accuracy
+
+[execution]
+seed    = 42                  # runs are reproducible
+threads = 8
+```
+
+Every field has a default except `domain.lower` and `domain.upper`. The
+defaults, their allowed ranges and what each one does are documented next to
+the field in [`src/input/parameters.hpp`](src/input/parameters.hpp), which is
+the authoritative list.
+
+**A misspelled name is an error, not a silent default:**
+
+```
+error: unrecognised parameters in input.toml:
+  dynamics.c11   (line 14)
+  dynmaics.c2    (line 22)
+```
+
+Contradictory settings are caught before anything runs:
+
+```
+error: convergence.swap_tol must exceed objfun_tol, else the run converges
+       before it can swap
+```
+
+## Choosing what to minimise
+
+```toml
+[objective]
+kind = "poincare"
+```
+
+**`poincare`** — the real problem. Integrates the trajectory and measures the
+return distance. Expensive, and what the physics is about.
+
+**`analytic`** — three standard test functions with known answers, evaluated in
+a few arithmetic operations instead of a whole integration:
+
+```toml
+[objective]
+kind = "analytic"
+[analytic]
+function = "rastrigin"        # sphere | rastrigin | rosenbrock
+```
+
+Use these to watch the swarm work without waiting on the physics. A run
+finishes in milliseconds, so they are the fastest way to get a feel for what
+the parameters do. All three have their minimum at value 0, so
+`objfun_target = 0` suits them all.
+
+## Choosing how to search
+
+```toml
+[strategy]
+kind = "single"
+```
+
+**`single`** — one swarm, one minimum. Start here.
+
+**`deflection`** — runs the swarm repeatedly. After each success it makes the
+function blow up near the minimum it already found, so the next run cannot
+converge to the same place. Finds several minima in one go.
+
+```toml
+[strategy]
+kind = "deflection"
+[deflection]
+runs = 3
+```
+
+**`grid`** — chops the domain into a grid and runs an independent swarm in each
+cell. The most thorough option and by far the slowest.
+
+```toml
+[strategy]
+kind = "grid"
+[grid]
+resolution = 2                # 2^(2*resolution) cells: 2 -> 16, 4 -> 256
+batch      = 0                # cells at once; 0 = fill the machine
+```
+
+`resolution` is an exponent, so it grows fast: each step up is four times the
+work in 2D. Start at 2.
+
+Each cell writes its own log to `execution.output_dir`, so parallel runs never
+interleave.
+
+## The precision swap
+
+This is the idea worth understanding.
+
+`double` is fast but only carries about 16 digits, and its own rounding error
+swamps the answer below roughly 1e-6. Arbitrary-precision arithmetic reaches
+any accuracy you ask for but costs perhaps 200 times more per operation.
+
+So the program uses both. It runs in `double` until the residual falls below
+`swap_tol`, hands the **entire swarm** — positions, velocities, every point's
+best-known result — to a high-precision copy, and carries on. The iteration
+count crosses with it, which is why `max_iter` is one shared budget rather than
+two.
+
+```
+double, fast          swap_tol           mpreal, exact
+├──────────────────────────┤──────────────────────────┤
+start                    1e-5                   objfun_tol
+```
+
+Two settings worth knowing:
+
+- `swap_tol` at or below `objfun_target` never swaps — a pure `double` run.
+- `swap_tol` above the starting residual swaps immediately — everything slow
+  and exact.
+
+If you do not need more than about 19 digits, you can drop the MPFR dependency
+entirely and use the hardware's widest float:
 
 ```sh
-cmake -DCMAKE_BUILD_TYPE=Release ..
-# or
-cmake -DCMAKE_BUILD_TYPE=Debug ..
+cmake -S . -B build -DPSO_USE_MPREAL_SWAP=OFF
 ```
 
-To compile the demo version, execute `make all` in the `/bin` folder if the environment is Linux. If it is MACOS, execute `make __MAC__=true all`. The difference between these two compilations is the implementation of the threads. In a Linux environment the user can define the number of threads they want to use, but in a MACOS environment the system itself regularises the number of threads used by the program.
+That build is roughly ten times faster and links neither MPFR nor GMP. It caps
+precision at 64 bits of mantissa, which is ample for `objfun_tol = 1e-8`.
 
-# Testing and Production Environment
+## Demos
 
-The testing and production of this project was done on Linux Ubuntu 22.04 and on MACOS version 15.5. The program was compiled using g++ 11.4.0 in Linux and the native clang++ compiler in MACOS (version 17.0.0 as of the publication of the project).
+Four ready-made configurations, each mirroring one of the original
+implementation's examples. They are **not** built by default, because one of
+them is a 256-cell grid run:
 
-# Credits
+```sh
+cmake --build build --target local_demo
+./build/local_demo
+```
 
-- <a id="ref-1"></a>Katsanikas Μ., Bakos Κ. and Wiggins S. [2026], The Computation of Periodic Orbits in Hamiltonian Systems Using Swarm Intelligence, International Journal of Bifurcation and Chaos, 36, 2650102.
-- [Foivos Zanias](https://github.com/phyzan), for the creation of the [OdeCraft](https://github.com/phyzan/odecraft) used for the implementation of this project, as well as insights for the general implementation.
+| target | what it shows |
+|---|---|
+| `local_demo` | neighbourhood topology (LSH) |
+| `global_demo` | one attractor for the whole swarm |
+| `deflection_demo` | repeated runs, several minima |
+| `grid_demo` | one swarm per subspace — **slow**, 256 cells |
 
-# Versions
+Each takes no arguments and reads the `.toml` beside it, whose path is compiled
+in. The `.toml` files document which setting came from which line of the
+original code, so they double as a migration record.
 
-### Version 0.0.0
-- Initial development version
+## Layout
 
-### Version 0.1.0
-- Added an option to start grid search from a selected subspace, ignoring the previous ones.
+| path | holds |
+|---|---|
+| `src/input/` | every parameter and its default; the TOML reader; validation |
+| `src/objective/` | what is being minimised — the interface, Poincaré, analytic |
+| `src/integrate/` | the ODE system, the section event, one file per stepper |
+| `src/swarm/` | swarm state, the iteration loop, neighbourhood topologies |
+| `src/driver/` | the precision swap; the single, deflection and grid strategies |
+| `demos/` | four example configurations |
 
-### Version 0.1.1
-- Refactored code to follow Microsoft coding standards.
+The layering is strict: the swarm and the drivers know nothing about physics.
+They ask an objective for a value at a point, and that is the entire contract.
 
-### Version 0.1.2
-- Updated ReadMe and did minor code changes in grid_search.
+## Adding your own objective
+
+The swarm needs three things from an objective, and nothing else:
+
+```cpp
+template<typename T>
+class Objective{
+    virtual T evaluate(const T* x) = 0;                 // value at x, +inf if infeasible
+    virtual std::vector<std::array<T, PSO_DIM>> refine(const T* x) = 0;
+    virtual size_t stride() const = 0;                  // rows per recorded minimum
+};
+```
+
+To add one:
+
+1. Write a class implementing those three, in `src/objective/`.
+2. Add a value to `ObjectiveKind` in `src/input/parameters.hpp`, with a struct
+   for its own parameters.
+3. Read that struct in `read_parameters` and check it in `validate`.
+4. Add one line to `make_objective` in `src/objective/objective.cpp`.
+
+Nothing in `src/swarm/`, `src/driver/` or `src/integrate/` changes.
+[`src/objective/analytic.hpp`](src/objective/analytic.hpp) is the worked
+example and is short enough to read in a minute.
+
+## Exit codes
+
+| code | meaning |
+|---|---|
+| 0 | at least one minimum reached `objfun_tol` |
+| 1 | budget exhausted or stalled; nothing converged |
+| 2 | invalid input; nothing ran |
+
+## Credits
+
+Method and test problem from Katsanikas, Bakos and Wiggins (2026), *The
+Computation of Periodic Orbits in Hamiltonian Systems Using Swarm
+Intelligence*, International Journal of Bifurcation and Chaos 36, 2650102.
+
+Integration by [odecraft](https://github.com/phyzan/odecraft). Input parsing by
+[toml++](https://github.com/marzer/tomlplusplus).

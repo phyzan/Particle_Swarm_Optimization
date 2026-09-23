@@ -1,6 +1,24 @@
-.DS_Store
-.vscode
-.clangd
-.clang-format
 .cache
-build
+build/
+
+# CMake artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+**/Makefile
+!Makefile
+!CMakeLists.txt
+
+# Compiled files
+*.so
+*.o
+*.a
+*.dylib
+
+# IDE
+.vscode/
+.idea/
+
+# Demo and run output
+out/
+p2_1024/

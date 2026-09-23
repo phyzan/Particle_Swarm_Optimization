@@ -1,0 +1,41 @@
+# Starter configuration: one swarm, one periodic orbit, about half a second.
+#
+# Every field below has a default in src/input/parameters.hpp, which documents
+# what each one does and what values are legal. Only domain.lower and
+# domain.upper have no default -- there is no sensible guess for those.
+
+[domain]
+lower = [-2.5, -0.5]
+upper = [ 2.5,  0.5]
+
+[convergence]
+objfun_target = 0.0           # the value to reach
+objfun_tol    = 1e-8          # success when |value - target| <= this
+swap_tol      = 1e-5          # switch to high precision below this
+mpfr_prec     = 100           # bits of precision after the switch
+max_iter      = 15000         # budget, shared by BOTH precision phases
+
+[dynamics]
+pop_size = 20                 # number of candidate points
+c1       = 2.0                # pull toward a point's own best find
+c2       = 1.7                # pull toward its neighbours' best find
+
+[topology]
+kind = "global"               # global | ring | knn | lsh
+
+[strategy]
+kind = "single"               # single | deflection | grid
+
+[objective]
+kind = "poincare"             # poincare | analytic
+
+[poincare]
+energy      = 17.0
+section     = -1.8019693
+n_crossings = 1               # 1 = simple orbit, 2 = orbit of double the period
+integrator  = "RK45"          # Euler RK4 RK23 RK45 DOP853 BDF
+rtol        = 1e-12           # integration accuracy
+
+[execution]
+seed    = 42                  # runs are reproducible
+threads = 8

@@ -1,0 +1,51 @@
+# Mirrors grid_search_demo.cpp from the reference implementation:
+#   grid_search(gp, 1e-5, 100, "Poincare") with gp.type = "Global_Classic"
+#
+# WARNING: resolution 4 in 2D is 2^(2*4) = 256 subspaces, each a full swarm
+# run. That is the paper's configuration and it takes a long time. Drop
+# resolution to 2 (16 subspaces) for a quick look.
+
+[domain]
+lower = [-2.5, -2.5]
+upper = [ 2.5,  2.5]
+bound_policy = "none"
+
+[convergence]
+objfun_target = 0.0
+objfun_tol    = 1e-8
+swap_tol      = 1e-5
+mpfr_prec     = 100
+max_iter      = 15000
+
+[dynamics]
+pop_size      = 20
+c1            = 2.0
+c2            = 1.7
+w_max         = 0.5
+w_min         = 0.01
+velocity_init = "uniform01"
+
+[topology]
+kind = "global"           # gp.type = "Global_Classic"
+
+[strategy]
+kind = "grid"
+
+[grid]
+resolution     = 4        # gp.resolution -> 256 subspaces
+batch          = 2        # gp.batch_size
+start_subspace = 0
+
+[poincare]
+energy      = 17.0
+section     = -1.8019693
+n_crossings = 2           # objp.pc.p = 2
+integrator  = "RK45"
+rtol        = 1e-12
+metric      = "weighted"
+
+[execution]
+seed       = 42
+threads    = 8
+output_dir = "p2_1024"    # gp.dest
+resume     = false
