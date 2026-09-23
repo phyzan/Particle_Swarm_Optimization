@@ -4,8 +4,6 @@
 
 #include <iostream>
 #include <lazy/lazy.hpp>
-#include <odecraft/Core/ObjectiveSolver.hpp>
-#include <odecraft/Tools.hpp>
 #include <odecraft/odecraft.hpp>
 #include <lazy/apps/mpfrLazy.hpp>
 #include "../../local_definitions.hpp"
@@ -74,9 +72,9 @@ struct MyObjFunc{
 
 
 template<typename T>
-class MySolver : public ode::ObjectiveSolver<ode::Stepper::RK45, T, 4, ode::SolverPolicy::Static, OdeSystem<T>, MyObjFunc<T>>{
+class MySolver : public ode::StaticEventStepper<ode::Stepper::RK45, T, 4, ode::SolverPolicy::Static, OdeSystem<T>, MyObjFunc<T>>{
 
-    using Base = ode::ObjectiveSolver<ode::Stepper::RK45, T, 4, ode::SolverPolicy::Static, OdeSystem<T>, MyObjFunc<T>>;
+    using Base = ode::StaticEventStepper<ode::Stepper::RK45, T, 4, ode::SolverPolicy::Static, OdeSystem<T>, MyObjFunc<T>>;
 
 public:
 
