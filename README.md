@@ -49,7 +49,7 @@ Build the project:
 git clone --recursive https://github.com/phyzan/Particle_Swarm_Optimization
 cd Particle_Swarm_Optimization
 cmake -S . -B build
-cmake --build build -j4
+cmake --build build -j
 ```
 and run the executable from the example parameter file `input.toml`:
 ```sh
@@ -57,7 +57,7 @@ and run the executable from the example parameter file `input.toml`:
 ```
 or build and run a demo:
 ```sh
-cmake --build build --target local_demo
+cmake --build build --target local_demo -j
 ./build/local_demo
 ```
 

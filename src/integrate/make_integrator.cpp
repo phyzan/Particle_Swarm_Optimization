@@ -13,8 +13,8 @@ std::unique_ptr<Integrator<T>> make_integrator(const input::Parameters& pin)
 {
     return ode::choose_integrator_case<std::unique_ptr<Integrator<T>>>(
         ode::getIntegrator(pin.objective.poincare.integrator),
-        [&pin]<ode::Stepper S>(){
-            return std::unique_ptr<Integrator<T>>(new TypedIntegrator<T, S>(pin));
+        [&pin]<ode::Stepper S>() -> std::unique_ptr<Integrator<T>> {
+            return std::make_unique<TypedIntegrator<T, S>>(pin);
         });
 }
 

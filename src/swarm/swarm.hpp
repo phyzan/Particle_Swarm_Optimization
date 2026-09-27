@@ -126,9 +126,9 @@ public:
           out(stream),
           rng(pin.execution.seed),
           topo_rng(pin.execution.seed ^ 0x5DEECE66DULL),
-          state(pin.dynamics.pop_size),
-          neighbours(pin.topology, pin.dynamics.pop_size, span_of(pin))
+          state(pin.dynamics.pop_size)
     {
+        nbr = topology::make_neighbourhood<T>(pin.topology, pin.dynamics.pop_size, span_of(pin));
         for (size_t i = 0; i < PSO_DIM; i++){
             span[i]  = pin.domain.upper[i] - pin.domain.lower[i];
             v_max[i] = T{pin.dynamics.vclamp_frac * span[i]};
@@ -385,11 +385,7 @@ private:
     /// @brief Index of the particle supplying j's social attractor.
     size_t attractor(size_t j){
 
-        if (neighbours.mode() == input::TopologyKind::Global){
-            return state.g;
-        }
-
-        neighbours.query(state.X, j, pop_size(), candidates);
+        candidates = nbr->query(state.X, j);
 
         if (candidates.empty()){
             return state.g;
@@ -424,7 +420,7 @@ private:
             chi = T{std::abs(2*dyn.constriction_k / (2 - phi - std::sqrt(phi*phi - 4*phi)))};
         }
 
-        neighbours.rebuild(state.X, pop_size(), topo_rng);
+        nbr->rebuild(state.X, topo_rng);
 
         std::uniform_real_distribution<Real> uniform(0.0, 1.0);
 
@@ -549,7 +545,7 @@ private:
     std::array<Real, PSO_DIM> span{};
     std::array<T, PSO_DIM> v_max{};
 
-    topology::Neighbourhood neighbours;
+    std::unique_ptr<topology::Neighbourhood<T>> nbr;
     std::vector<size_t> candidates;
 
     // One objective instance per swarm particle. An implementation may hold

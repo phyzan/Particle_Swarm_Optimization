@@ -65,6 +65,19 @@ endif()
 
 message(STATUS "Objective evaluation parallelised with: ${PSO_PARALLEL_BACKEND}")
 
+# ---------------------------------------------------------------------------
+# Dependency performance options
+# ---------------------------------------------------------------------------
+
+# xdiff's automatic differentiation, as used by odecraft's implicit steppers
+# when they need a Jacobian. 
+# switches its README documents; all default to OFF upstream.
+set(XDIFF_FAST                 ON CACHE BOOL "" FORCE)  # aggressive inlining, Flat layout
+set(XDIFF_SCALAR_OPTIMIZATIONS ON CACHE BOOL "" FORCE)  # optimised Dual-scalar ops, Flat
+set(XDIFF_LAZY_NESTED_DUAL     ON CACHE BOOL "" FORCE)  # no heap temporaries, Nested Nvars=0
+
+set(ODECRAFT_NO_NAN_CHECK ON CACHE BOOL "" FORCE)
+
 # The reference implementation defined NO_ODE_WARN; odecraft now spells that
 # as an option. Warnings on every rejected step would otherwise dominate the
 # console, since particles off the energy shell are routine here.

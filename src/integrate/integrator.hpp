@@ -1,6 +1,7 @@
 #ifndef PSO_INTEGRATE_INTEGRATOR_HPP
 #define PSO_INTEGRATE_INTEGRATOR_HPP
 
+#include "input/parameters.hpp"
 #include <src/integrate/events.hpp>
 #include <src/integrate/system.hpp>
 
@@ -28,7 +29,12 @@ public:
     virtual bool at_event() const = 0;
 
     /// @brief The current state vector.
-    virtual const T* state() const = 0;
+    virtual void get_current_vector(T* out) const = 0;
+
+    const T* cache_vector() const {
+        this->get_current_vector(cached_vector.data());
+        return cached_vector.data();
+    }
 
     /// @brief The current time.
     virtual const T& time() const = 0;
@@ -41,6 +47,9 @@ public:
 
     /// @brief The step size the last integration settled on.
     virtual T step_size() const = 0;
+
+private:
+    mutable std::array<T, 2*PSO_DIM> cached_vector;
 };
 
 
@@ -80,8 +89,8 @@ public:
         return solver_.at_event();
     }
 
-    const T* state() const override{
-        return solver_.vector().data();
+    void get_current_vector(T* out) const override{
+        solver_.fill_current_vector(out);
     }
 
     const T& time() const override{

@@ -124,7 +124,7 @@ private:
 
     /// @brief Total energy of the solver's current state.
     T energy() const{
-        const auto q = solver_->state();
+        const T* q = solver_->cache_vector();
         return (q[2]*q[2] + q[3]*q[3])/2 + potential.V(q[0], q[1]);
     }
 
@@ -145,14 +145,10 @@ private:
 
             if (solver_->at_event()){
 
-                const auto q = solver_->state();
-
-                for (size_t i = 0; i < N; i++){
-                    last[i] = q[i];
-                }
+                solver_->get_current_vector(last.data());
 
                 if (record){
-                    record->push_back({q[0], q[2]});
+                    record->push_back({last[0], last[2]});
                 }
 
                 seen++;

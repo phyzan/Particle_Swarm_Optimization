@@ -5,11 +5,10 @@
 
 #include <iomanip>
 #include <iostream>
-#include <stdexcept>
 
 namespace {
 
-enum class Exit : int{
+enum class Exit : uint8_t{
     Converged  = 0,
     NotFound   = 1,
     BadInput   = 2
