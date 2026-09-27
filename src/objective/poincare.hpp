@@ -65,11 +65,6 @@ public:
         return out;
     }
 
-    /// @brief One orbit occupies n_crossings rows.
-    size_t stride() const override{
-        return n_crossings;
-    }
-
 private:
 
     /// @brief Lifts (x, px) onto the energy shell and re-arms the solver.

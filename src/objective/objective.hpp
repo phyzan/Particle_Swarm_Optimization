@@ -27,20 +27,11 @@ public:
     virtual ~Objective() = default;
 
     /// @brief Value at x, or +inf when x is infeasible.
-    ///
-    /// Called pop_size times per iteration -- this is the hot path, and on
-    /// most problems it dominates everything else the program does.
     virtual T evaluate(const T* x) = 0;
 
     /// @brief The full solution at x, recorded once a minimum is accepted.
-    ///
-    /// Returns stride() rows, or nothing when x does not in fact solve the
-    /// problem. Called once per minimum, never in the evaluation loop, so it
-    /// should be written for clarity rather than speed.
     virtual std::vector<std::array<T, PSO_DIM>> refine(const T* x) = 0;
 
-    /// @brief How many rows one recorded minimum occupies.
-    virtual size_t stride() const = 0;
 };
 
 
@@ -48,7 +39,6 @@ public:
 template<typename T>
 std::unique_ptr<Objective<T>> make_objective(const input::Parameters& pin);
 
-/// @brief stride() without building an objective, for reporting.
 size_t objective_stride(const input::Parameters& pin);
 
 extern template std::unique_ptr<Objective<Real>>     make_objective<Real>(const input::Parameters&);

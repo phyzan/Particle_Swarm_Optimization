@@ -33,14 +33,16 @@ public:
         switch (which){
 
             case Function::Sphere:{
-                T sum = T{0};
-                for (size_t i = 0; i < PSO_DIM; i++){ sum += x[i]*x[i]; }
+                T sum{0};
+                for (size_t i = 0; i < PSO_DIM; i++){
+                    sum += x[i]*x[i];
+                }
                 return sum;
             }
 
             case Function::Rastrigin:{
                 using std::cos;
-                T sum = T{10 * PSO_DIM};
+                T sum = 10 * PSO_DIM;
                 for (size_t i = 0; i < PSO_DIM; i++){
                     sum = sum + x[i]*x[i] - T{10}*cos(2*M_PI*x[i]);
                 }
@@ -48,11 +50,11 @@ public:
             }
 
             case Function::Rosenbrock:{
-                T sum = T{0};
+                T sum{0};
                 for (size_t i = 0; i + 1 < PSO_DIM; i++){
-                    const T a = T{1} - x[i];
-                    const T b = x[i+1] - x[i]*x[i];
-                    sum = sum + a*a + 100*b*b;
+                    const auto a = 1 - x[i];
+                    const auto b = x[i+1] - x[i]*x[i];
+                    sum += a*a + 100*b*b;
                 }
                 return sum;
             }
@@ -64,13 +66,10 @@ public:
     /// @brief The minimiser itself; there is nothing further to reconstruct.
     std::vector<std::array<T, PSO_DIM>> refine(const T* x) override{
         std::array<T, PSO_DIM> point{};
-        for (size_t i = 0; i < PSO_DIM; i++){ point[i] = x[i]; }
+        for (size_t i = 0; i < PSO_DIM; i++){
+            point[i] = x[i];
+        }
         return {point};
-    }
-
-    /// @brief One minimum is one row.
-    size_t stride() const override{
-        return 1;
     }
 
     /// @brief Maps a name onto a function; throws when it is not one of them.

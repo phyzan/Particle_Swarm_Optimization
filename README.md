@@ -303,7 +303,6 @@ template<typename T>
 class Objective{
     virtual T evaluate(const T* x) = 0;                 // value at x, +inf if infeasible
     virtual std::vector<std::array<T, PSO_DIM>> refine(const T* x) = 0;
-    virtual size_t stride() const = 0;                  // rows per recorded minimum
 };
 ```
 

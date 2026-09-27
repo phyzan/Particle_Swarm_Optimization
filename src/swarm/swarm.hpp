@@ -65,7 +65,7 @@ struct SwarmState{
     }
 
     /// @brief Converts the whole state to another precision, mapping +inf to +inf.
-        template<typename U>
+    template<typename U>
     SwarmState<U> cast() const{
 
         SwarmState<U> out(pop_size());
@@ -205,11 +205,15 @@ public:
         }
 
         while (true){
-
-            if (converged())              { return Status::Converged; }
-            if (exhausted())              { return Status::Exhausted; }
-            if (stalled())                { return Status::Stalled; }
-            if (allow_swap && swapping()) { return Status::Swap; }
+            if (converged()){
+                return Status::Converged;
+            } else if (exhausted()){
+                return Status::Exhausted;
+            } else if (stalled()){
+                return Status::Stalled;
+            } else if (allow_swap && swapping()){
+                return Status::Swap;
+            }
 
             state.iter++;
 
@@ -235,33 +239,49 @@ public:
 
     /// @brief Distance of the best particle's value from the target.
     T residual() const{
-        // std two-step. Unqualified abs() on a double picks int abs(int) from
-        // <cstdlib> and truncates the residual to 0, which reads as instant
-        // convergence. ADL still supplies mpfr::abs for the mpreal wrappers.
         using std::abs;
-        return abs(state.Fp[state.g] - T{params.convergence.objfun_target});
+        return abs(state.Fp[state.g] - params.convergence.objfun_target);
     }
 
     /// @brief Whether the residual has reached objfun_tol.
-    bool converged() const{ return residual() <= T{params.convergence.objfun_tol}; }
+    bool converged() const{
+        return residual() <= params.convergence.objfun_tol;
+    
+    }
     /// @brief Whether the iteration budget is spent.
-    bool exhausted() const{ return state.iter  >= params.convergence.max_iter; }
+    bool exhausted() const{
+        return state.iter  >= params.convergence.max_iter;
+    }
+
     /// @brief Whether the best value has not improved for max_stall_iter iterations.
-    bool stalled()   const{ return state.stall >= params.convergence.max_stall_iter; }
+    bool stalled() const{
+        return state.stall >= params.convergence.max_stall_iter;
+    }
+
     /// @brief Whether the residual has dropped below swap_tol.
-    bool swapping()  const{ return residual() < T{params.convergence.swap_tol}; }
+    bool swapping() const{
+        return residual() < params.convergence.swap_tol;
+    }
 
     /// @brief Number of particles in the swarm.
-    size_t pop_size() const{ return params.dynamics.pop_size; }
+    size_t pop_size() const{
+        return params.dynamics.pop_size;
+    }
 
     /// @brief Read-only access to the swarm state.
-    const SwarmState<T>& snapshot() const{ return state; }
+    const SwarmState<T>& snapshot() const{
+        return state;
+    }
 
     /// @brief Mutable access to the swarm state.
-    SwarmState<T>& snapshot(){ return state; }
+    SwarmState<T>& snapshot(){
+        return state;
+    }
 
     /// @brief The stream this swarm reports to.
-    std::ostream& log() const{ return *out; }
+    std::ostream& log() const{
+        return *out;
+    }
 
 private:
 
@@ -291,12 +311,13 @@ private:
         // Particle idx owns objectives[idx] and writes only state.F[idx], so
         // the loop partitioning is the whole synchronisation story: no two
         // workers ever touch the same object.
-        const auto evaluate_one = [this](size_t idx){
-            T value = objectives[idx]->evaluate(&state.X(idx, 0));
+        const auto evaluate_one =
+            [this](size_t idx){
+                T value = objectives[idx]->evaluate(&state.X(idx, 0));
 
-            // CONTRACT: every slot written, on every path.
-            state.F[idx] = transform ? transform(value, idx) : value;
-        };
+                // CONTRACT: every slot written, on every path.
+                state.F[idx] = transform ? transform(value, idx) : value;
+            };
 
 #if defined(PSO_USE_GCD)
 
@@ -372,8 +393,12 @@ private:
             return T{dyn.w_max};
         }
 
-        const Real decay = std::max<Real>(1, std::round(dyn.w_decay_frac * Real(params.convergence.max_iter)));
-        const Real s = std::min<Real>(Real(state.iter), decay) / decay;
+        const Real decay = std::max<Real>(
+            1,
+            std::round(dyn.w_decay_frac * params.convergence.max_iter)
+        );
+
+        const Real s = std::min<Real>(state.iter, decay) / decay;
 
         if (dyn.w_schedule == input::InertiaSchedule::Exponential && dyn.w_min > 0){
             return T{dyn.w_min * std::pow(dyn.w_max / dyn.w_min, 1 - s)};
@@ -413,7 +438,7 @@ private:
 
         const auto& dyn = params.dynamics;
 
-        T chi = T{1};
+        T chi{1};
 
         if (dyn.constriction){
             const Real phi = dyn.c1 + dyn.c2;
@@ -432,19 +457,24 @@ private:
 
                 // Fresh per component: one scalar per particle would confine
                 // the pull to the line joining it to its attractors.
-                const T r1 = T{uniform(rng)};
-                const T r2 = T{uniform(rng)};
+                const T r1{uniform(rng)};
+                const T r2{uniform(rng)};
 
-                state.V(j, i) = w * state.V(j, i)
-                              + T{dyn.c1} * r1 * (state.P(j, i) - state.X(j, i))
-                              + T{dyn.c2} * r2 * (state.P(a, i) - state.X(j, i));
+                state.V(j, i) =
+                    w * state.V(j, i)
+                    + dyn.c1 * r1 * (state.P(j, i) - state.X(j, i))
+                    + dyn.c2 * r2 * (state.P(a, i) - state.X(j, i));
 
                 if (dyn.constriction){
                     state.V(j, i) = chi * state.V(j, i);
                 }
 
-                if (state.V(j, i) < -v_max[i]){ state.V(j, i) = -v_max[i]; }
-                if (state.V(j, i) >  v_max[i]){ state.V(j, i) =  v_max[i]; }
+                if (state.V(j, i) < -v_max[i]){
+                    state.V(j, i) = -v_max[i];
+                }
+                if (state.V(j, i) >  v_max[i]){
+                    state.V(j, i) =  v_max[i];
+                }
             }
         }
     }
@@ -454,41 +484,40 @@ private:
 
         std::uniform_real_distribution<Real> uniform(0.0, 1.0);
 
-        for (size_t j = 0; j < pop_size(); j++){
-            for (size_t i = 0; i < PSO_DIM; i++){
+        for (size_t i = 0; i < pop_size(); i++){
+            for (size_t j = 0; j < PSO_DIM; j++){
+                state.X(i, j) = state.X(i, j) + state.V(i, j);
 
-                state.X(j, i) = state.X(j, i) + state.V(j, i);
+                const T low  = T{params.domain.lower[j]};
+                const T high = T{params.domain.upper[j]};
 
-                const T low  = T{params.domain.lower[i]};
-                const T high = T{params.domain.upper[i]};
-
-                if (state.X(j, i) >= low && state.X(j, i) <= high){
+                if (state.X(i, j) >= low && state.X(i, j) <= high){
                     continue;
                 }
 
                 switch (params.domain.bound_policy){
 
-                case input::BoundPolicy::None:
-                    break;
+                    case input::BoundPolicy::None:
+                        break;
 
-                case input::BoundPolicy::Clamp:
-                    state.X(j, i) = (state.X(j, i) < low) ? low : high;
-                    state.V(j, i) = T{0};
-                    break;
+                    case input::BoundPolicy::Clamp:
+                        state.X(i, j) = (state.X(i, j) < low) ? low : high;
+                        state.V(i, j) = T{0};
+                        break;
 
-                case input::BoundPolicy::Reflect:
-                    state.X(j, i) = (state.X(j, i) < low) ? 2*low - state.X(j, i)
-                                                          : 2*high - state.X(j, i);
-                    if (state.X(j, i) < low || state.X(j, i) > high){
-                        state.X(j, i) = (state.X(j, i) < low) ? low : high;
-                    }
-                    state.V(j, i) = -state.V(j, i);
-                    break;
+                    case input::BoundPolicy::Reflect:
+                        state.X(i, j) = (state.X(i, j) < low) ? 2*low - state.X(i, j)
+                                                            : 2*high - state.X(i, j);
+                        if (state.X(i, j) < low || state.X(i, j) > high){
+                            state.X(i, j) = (state.X(i, j) < low) ? low : high;
+                        }
+                        state.V(i, j) = -state.V(i, j);
+                        break;
 
-                case input::BoundPolicy::ReInit:
-                    state.X(j, i) = T{params.domain.lower[i] + uniform(rng)*span[i]};
-                    state.V(j, i) = T{0};
-                    break;
+                    case input::BoundPolicy::ReInit:
+                        state.X(i, j) = T{params.domain.lower[i] + uniform(rng)*span[i]};
+                        state.V(i, j) = T{0};
+                        break;
                 }
             }
         }
@@ -503,16 +532,16 @@ private:
             return;
         }
 
-        const T radius = T{params.repulsion.radius};
-        const T rho    = T{params.repulsion.rho};
+        const T radius{params.repulsion.radius};
+        const T rho{params.repulsion.rho};
 
         for (const auto& minimum : state.found){
-            for (size_t j = 0; j < pop_size(); j++){
+            for (size_t i = 0; i < pop_size(); i++){
 
-                T squared = T{0};
+                T squared{0};
 
-                for (size_t i = 0; i < PSO_DIM; i++){
-                    const T d = state.X(j, i) - minimum[i];
+                for (size_t j = 0; j < PSO_DIM; i++){
+                    const T d = state.X(i, j) - minimum[j];
                     squared = squared + d*d;
                 }
 
@@ -523,14 +552,14 @@ private:
                     continue;
                 }
 
-                for (size_t i = 0; i < PSO_DIM; i++){
-                    state.X(j, i) = state.X(j, i) + rho*(state.X(j, i) - minimum[i])/distance;
-                    state.P(j, i) = state.X(j, i);
+                for (size_t j = 0; j < PSO_DIM; j++){
+                    state.X(i, j) = state.X(i, j) + rho*(state.X(i, j) - minimum[i])/distance;
+                    state.P(i, j) = state.X(i, j);
                 }
 
                 // The particle was moved, so its recorded best no longer
                 // describes anywhere it has been.
-                state.Fp[j] = ode::inf<T>();
+                state.Fp[i] = ode::inf<T>();
             }
         }
     }

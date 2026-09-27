@@ -92,8 +92,7 @@ const char* describe(int status)
     return "unknown";
 }
 
-Minima run_swarm(const input::Parameters& params, std::ostream& out, Minima inherited)
-{
+Minima run_swarm(const input::Parameters& params, std::ostream& out, Minima inherited){
     Swarm<Real> fast(params, &out);
 
     apply_deflection(fast, params);
@@ -154,7 +153,7 @@ Minima run_deflection(const input::Parameters& params, std::ostream& out)
         const size_t before = found.size();
 
         out << "-- deflection run " << (run + 1) << " of " << params.deflection.runs
-            << " (" << before/objective_stride(params) << " minima so far)\n";
+            << " (" << (before / objective_stride(params)) << " minima so far)\n";
 
         found = run_swarm(params, out, std::move(found));
 

@@ -9,8 +9,7 @@
 /// objective means a new class, a new enum value, its own parameter block, and
 /// one line here -- nothing in the swarm or the drivers changes.
 template<typename T>
-std::unique_ptr<Objective<T>> make_objective(const input::Parameters& pin)
-{
+std::unique_ptr<Objective<T>> make_objective(const input::Parameters& pin){
     switch (pin.objective.kind){
 
         case input::ObjectiveKind::Analytic:
@@ -23,9 +22,7 @@ std::unique_ptr<Objective<T>> make_objective(const input::Parameters& pin)
     return std::make_unique<PoincareObjective<T>>(pin);
 }
 
-/// @brief stride() without building an objective, for reporting.
-size_t objective_stride(const input::Parameters& pin)
-{
+size_t objective_stride(const input::Parameters& pin){
     switch (pin.objective.kind){
         case input::ObjectiveKind::Analytic: return 1;
         case input::ObjectiveKind::Poincare: break;

@@ -125,7 +125,7 @@ Minima run_grid(const input::Parameters& params, std::ostream& out)
                 found.insert(found.end(), local_found.begin(), local_found.end());
 
                 out << "  subspace " << std::setw(5) << std::setfill('0') << cell
-                    << " done (" << local_found.size()/objective_stride(params)
+                    << " done (" << (local_found.size()/objective_stride(params))
                     << " minima)\n";
             }
         }
