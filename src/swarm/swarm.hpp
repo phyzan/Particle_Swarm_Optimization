@@ -30,7 +30,7 @@ enum class Status : uint8_t{
     Exhausted,
     Stalled,
     Swap,
-    Infeasible
+    Infeasible,
 };
 
 
@@ -319,7 +319,7 @@ private:
                 state.F[idx] = transform ? transform(value, idx) : value;
             };
 
-#if defined(PSO_USE_GCD)
+#ifdef PSO_USE_GCD
 
         // Apple clang ships no OpenMP runtime, but libdispatch is always
         // there. dispatch_apply is a parallel for and blocks until every
