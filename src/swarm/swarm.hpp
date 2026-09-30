@@ -149,18 +149,18 @@ public:
         for (size_t j = 0; j < pop_size(); j++){
             for (size_t i = 0; i < PSO_DIM; i++){
 
-                state.X(j, i) = T{params.domain.lower[i] + uniform(rng)*span[i]};
+                state.X(j, i) = params.domain.lower[i] + uniform(rng)*span[i];
 
                 switch (params.dynamics.velocity_init){
-                case input::VelocityInit::Zero:
-                    state.V(j, i) = T{0};
-                    break;
-                case input::VelocityInit::ScaledUniform:
-                    state.V(j, i) = T{2*uniform(rng) - 1} * v_max[i];
-                    break;
-                case input::VelocityInit::Uniform01:
-                    state.V(j, i) = T{uniform(rng)};
-                    break;
+                    case input::VelocityInit::Zero:
+                        state.V(j, i) = 0;
+                        break;
+                    case input::VelocityInit::ScaledUniform:
+                        state.V(j, i) = (2*uniform(rng) - 1) * v_max[i];
+                        break;
+                    case input::VelocityInit::Uniform01:
+                        state.V(j, i) = uniform(rng);
+                        break;
                 }
             }
         }

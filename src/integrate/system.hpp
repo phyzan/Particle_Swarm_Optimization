@@ -5,6 +5,8 @@
 #include <src/input/parameters.hpp>
 #include <odecraft/odecraft.hpp>
 
+using xdiff::power;
+
 /// @brief Hamiltonian of a caldera-like potential energy surface.
 template<typename T>
 struct CalderaODE{
@@ -13,8 +15,9 @@ struct CalderaODE{
 
     /// @brief Potential energy of the caldera surface at (x, y).
     XDIFF_FORCEINLINE decltype(auto) V(const auto& x, const auto& y) const{
-        return c1*(x*x + y*y) + c2*y
-             - c3*(x*x*x*x + y*y*y*y - 6*x*x*y*y);
+        return c1*(power<2>(x) + power<2>(y)) + c2*y - c3*(power<4>(x) + power<4>(y) - 6*power<2>(x)*power<2>(y));
+        // return c1*(x*x + y*y) + c2*y
+            //  - c3*(x*x*x*x + y*y*y*y - 6*x*x*y*y);
     }
 
     /// @brief Hamilton's equations: writes dq/dt for the state q.
@@ -53,7 +56,7 @@ inline CalderaODE<T> make_system(const input::Parameters& pin)
     return CalderaODE<T>{
         .c1 = T{pin.objective.poincare.c1},
         .c2 = T{pin.objective.poincare.c2},
-        .c3 = T{pin.objective.poincare.c3}
+        .c3 = T{pin.objective.poincare.c3},
     };
 }
 
