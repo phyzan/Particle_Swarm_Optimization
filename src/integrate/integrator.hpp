@@ -31,10 +31,7 @@ public:
     /// @brief The current state vector.
     virtual void get_current_vector(T* out) const = 0;
 
-    const T* cache_vector() const {
-        this->get_current_vector(cached_vector.data());
-        return cached_vector.data();
-    }
+    virtual ode::View1D<T, 4> vector() const = 0;
 
     /// @brief The current time.
     virtual const T& time() const = 0;
@@ -48,8 +45,6 @@ public:
     /// @brief The step size the last integration settled on.
     virtual T step_size() const = 0;
 
-private:
-    mutable std::array<T, 2*PSO_DIM> cached_vector;
 };
 
 
@@ -107,6 +102,10 @@ public:
 
     T step_size() const override{
         return solver_.ics().habs();
+    }
+
+    ode::View1D<T, 4> vector() const override{
+        return solver_.vector();
     }
 
 private:

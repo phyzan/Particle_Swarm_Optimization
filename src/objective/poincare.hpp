@@ -119,7 +119,7 @@ private:
 
     /// @brief Total energy of the solver's current state.
     T energy() const{
-        const T* q = solver_->cache_vector();
+        const T* q = solver_->vector().data();
         return (q[2]*q[2] + q[3]*q[3])/2 + potential.V(q[0], q[1]);
     }
 
