@@ -31,8 +31,6 @@ public:
     /// @brief The current state vector.
     virtual void get_current_vector(T* out) const = 0;
 
-    virtual ode::View1D<T, 4> vector() const = 0;
-
     /// @brief The current time.
     virtual const T& time() const = 0;
 
@@ -102,10 +100,6 @@ public:
 
     T step_size() const override{
         return solver_.ics().habs();
-    }
-
-    ode::View1D<T, 4> vector() const override{
-        return solver_.vector();
     }
 
 private:

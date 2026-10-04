@@ -119,7 +119,8 @@ private:
 
     /// @brief Total energy of the solver's current state.
     T energy() const{
-        const T* q = solver_->vector().data();
+        T* q = this->q_scratch.data();
+        solver_->get_current_vector(q);
         return (q[2]*q[2] + q[3]*q[3])/2 + potential.V(q[0], q[1]);
     }
 
@@ -170,6 +171,7 @@ private:
     CalderaODE<T> potential;
     std::array<T, N> start{};   // lifted initial condition
     std::array<T, N> last{};    // state at the most recent crossing
+    mutable std::array<T, 4> q_scratch;
 
     T y_surface;
     T shell_energy;
