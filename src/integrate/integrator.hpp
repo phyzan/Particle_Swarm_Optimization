@@ -99,7 +99,7 @@ public:
     }
 
     T step_size() const override{
-        return solver_.ics().habs();
+        return solver_.stepsize();
     }
 
 private:

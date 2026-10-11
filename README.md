@@ -36,12 +36,12 @@ You need a C++20 compiler, CMake 3.20 or newer, and the MPFR and GMP
 development libraries. For Debian / Ubuntu:
 
 ```sh
-sudo apt install libmpfr-dev libgmp-dev libomp-dev      # Debian / Ubuntu
+sudo apt install libmpfr-dev libgmp-dev libomp-dev libqhull-dev  # Debian / Ubuntu
 ```
 
 For macOS:
 ```sh
-brew install mpfr gmp
+brew install mpfr gmp qhull
 ```
 
 Build the project:
